@@ -42,11 +42,35 @@ class ImportPostTests(unittest.TestCase):
         self.assertEqual(import_id, response_data['data']['import_id'])
         self.assertEqual(http_response.status_code, 201)
 
-    def test_no_content_type_should_return_bad_request(self):
+    def test_when_no_content_type_should_return_bad_request(self):
         http_response = self.app.post('/imports', data={'test': 1})
 
         response_data = http_response.get_data(as_text=True)
         self.assertEqual('Content-Type must be application/json', response_data)
+        self.assertEqual(400, http_response.status_code)
+
+    def test_when_database_error_should_return_bad_request(self):
+        headers = [('Content-Type', 'application/json')]
+        import_data = self.read_import_data()
+
+        future = mockupdb.go(self.app.post, '/imports', data=json_util.dumps(import_data), headers=headers)
+        if self.server.got(mockupdb.OpMsg({'count': 'imports'}, namespace='db')):
+            self.server.ok(n=0)
+        if self.server.got(mockupdb.OpMsg({'insert': 'imports', 'documents': [import_data]}, namespace='db')):
+            self.server.command_err(11000, 'message')
+
+        http_response = future()
+        http_data = http_response.get_data(as_text=True)
+        self.assertIn('Database error: ', http_data)
+        self.assertEqual(400, http_response.status_code)
+
+    def test_when_incorrect_json_should_return_bad_request(self):
+        headers = [('Content-Type', 'application/json')]
+
+        http_response = self.app.post('/imports', data='{', headers=headers)
+
+        response_data = http_response.get_data(as_text=True)
+        self.assertIn('Error when parsing JSON: ', response_data)
         self.assertEqual(400, http_response.status_code)
 
     @classmethod
