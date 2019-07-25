@@ -1,0 +1,58 @@
+{
+    "title": "Import",
+    "type": "object",
+    "properties": {
+        "citizens": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "citizen_id": {
+                        "type": "integer"
+                    },
+                    "town": {
+                        "type": "string"
+                    },
+                    "street": {
+                        "type": "string"
+                    },
+                    "building": {
+                        "type": "string"
+                    },
+                    "appartement": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "birth_date": {
+                        "type": "string"
+                    },
+                    "gender": {
+                        "type": "string"
+                    },
+                    "relatives": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "citizen_id",
+                    "town",
+                    "street",
+                    "building",
+                    "appartement",
+                    "name",
+                    "birth_date",
+                    "gender",
+                    "relatives"
+                ]
+            }
+        }
+    },
+    "required": [
+        "citizens"
+    ]
+}
