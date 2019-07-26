@@ -6,9 +6,12 @@ from bson import json_util
 from jsonschema import ValidationError
 
 
-class Validator:
+class DataValidator:
     def __init__(self):
-        with open(os.path.join(os.path.dirname(__file__), 'schemas', 'import_schema.json')) as f:
+        import_schema_path = os.path.join(os.path.dirname(__file__), 'schemas', 'import_schema.json')
+        if not os.path.exists(import_schema_path):
+            raise FileNotFoundError(import_schema_path)
+        with open(import_schema_path) as f:
             self.import_schema = json_util.loads(f.read())
 
     def validate_import(self, import_data: dict):

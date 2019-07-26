@@ -7,14 +7,14 @@ from bson import json_util
 from jsonschema import ValidationError
 from pymongo import MongoClient
 
+from data_validator import DataValidator
 from index import make_app
-from validator import Validator
 
 
 class ImportPostTests(unittest.TestCase):
     @staticmethod
-    def create_mock_validator() -> Validator:
-        validator = Validator()
+    def create_mock_validator() -> DataValidator:
+        validator = DataValidator()
         validator.validate_import = MagicMock()
         return validator
 
