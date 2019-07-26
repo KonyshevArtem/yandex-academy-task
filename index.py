@@ -1,6 +1,8 @@
 import configparser
 import logging
 import os
+from collections import defaultdict
+from multiprocessing import Lock
 from typing import Tuple
 
 from flask import Flask, request
@@ -20,8 +22,11 @@ def make_app(db: MongoClient, data_validator: DataValidator) -> Flask:
         app.logger.error(message)
         return {'message': message}, status_code
 
+    locks = defaultdict(Lock)
+
     @app.route('/imports', methods=['POST'])
     def imports():
+
         if not request.is_json:
             return make_error_response('Content-Type must be application/json', 400)
 
@@ -29,15 +34,16 @@ def make_app(db: MongoClient, data_validator: DataValidator) -> Flask:
             import_data = request.get_json()
             data_validator.validate_import(import_data)
 
-            import_id = db['imports'].count()
-            import_data['import_id'] = import_id
+            with locks['post_imports']:
+                import_id = db['imports'].count()
+                import_data['import_id'] = import_id
 
-            db_response: InsertOneResult = db['imports'].insert_one(import_data)
-            if db_response.acknowledged:
-                response = {"data": {'import_id': import_id}}
-                return response, 201
-            else:
-                return make_error_response('Operation was not acknowledged', 400)
+                db_response: InsertOneResult = db['imports'].insert_one(import_data)
+                if db_response.acknowledged:
+                    response = {"data": {'import_id': import_id}}
+                    return response, 201
+                else:
+                    return make_error_response('Operation was not acknowledged', 400)
         except ValidationError as e:
             return make_error_response('Import data is not valid: ' + str(e), 400)
         except BadRequest as e:
