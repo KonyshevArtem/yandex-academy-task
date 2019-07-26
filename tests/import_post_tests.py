@@ -86,14 +86,13 @@ class ImportPostTests(unittest.TestCase):
 
     def test_when_invalid_import_should_return_bad_request(self):
         headers = [('Content-Type', 'application/json')]
-        self.validator.validate_import = MagicMock(side_effect=ValidationError('message'))
+        mock_validation = MagicMock(side_effect=ValidationError('message'))
+        with unittest.mock.patch.object(self.validator, 'validate_import', mock_validation):
+            http_response = self.app.post('/imports', data=json_util.dumps({'test': 1}), headers=headers)
 
-        http_response = self.app.post('/imports', data=json_util.dumps({'test': 1}), headers=headers)
-
-        response_data = http_response.get_data(as_text=True)
-        self.assertIn('Import data is not valid', response_data)
-        self.assertEqual(400, http_response.status_code)
-        self.validator.validate_import = MagicMock()
+            response_data = http_response.get_data(as_text=True)
+            self.assertIn('Import data is not valid', response_data)
+            self.assertEqual(400, http_response.status_code)
 
     @classmethod
     def tearDownClass(cls):

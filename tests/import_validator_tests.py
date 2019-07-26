@@ -1,22 +1,29 @@
 import os
 import unittest
+from unittest.mock import MagicMock
 
 from bson import json_util
 from jsonschema import ValidationError
 from parameterized import parameterized
 
 from validator import Validator
+from datetime import datetime
 
 
-class ValidatorTests(unittest.TestCase):
+class ImportValidatorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.validator = Validator()
 
-    def test_correct_scheme_should_be_valid(self):
+    def test_correct_import_should_be_valid(self):
         with open(os.path.join(os.path.dirname(__file__), 'import.json')) as f:
             import_data = json_util.loads(f.read())
         self.validator.validate_import(import_data)
+
+    def assert_exception(self, import_data: dict, expected_exception_message: str):
+        with self.assertRaises(ValidationError) as context:
+            self.validator.validate_import(import_data)
+        self.assertIn(expected_exception_message, str(context.exception))
 
     @parameterized.expand([
         ({}, 'citizens'),
@@ -40,9 +47,7 @@ class ValidatorTests(unittest.TestCase):
                         'birth_date': '', 'gender': ''}]}, 'relatives'),
     ])
     def test_import_should_be_incorrect_when_missing_field(self, import_data: dict, field_name: str):
-        with self.assertRaises(ValidationError) as context:
-            self.validator.validate_import(import_data)
-        self.assertIn(f'\'{field_name}\' is a required property', str(context.exception))
+        self.assert_exception(import_data, f'\'{field_name}\' is a required property')
 
     @parameterized.expand([
         ({'citizens': None}, 'array'),
@@ -69,9 +74,41 @@ class ValidatorTests(unittest.TestCase):
                         'birth_date': '', 'gender': '', 'relatives': ['']}]}, 'integer'),
     ])
     def test_import_should_be_incorrect_when_wrong_type_of_field(self, import_data: dict, data_type: str):
-        with self.assertRaises(ValidationError) as context:
-            self.validator.validate_import(import_data)
-        self.assertIn(f'is not of type \'{data_type}\'', str(context.exception))
+        self.assert_exception(import_data, f'is not of type \'{data_type}\'')
+
+    @unittest.mock.patch('jsonschema.validate')
+    def test_import_should_be_incorrect_when_citizen_ids_not_unique(self, _):
+        import_data = {'citizens': [{'citizen_id': 1}, {'citizen_id': 1}]}
+        self.assert_exception(import_data, 'Citizens ids are not unique')
+
+    @unittest.mock.patch('jsonschema.validate')
+    def test_import_should_be_incorrect_when_citizen_is_relative_to_himself(self, _):
+        import_data = {'citizens': [{'citizen_id': 1, 'relatives': [1]}]}
+        self.assert_exception(import_data, 'Citizen can not be relative to himself')
+
+    @unittest.mock.patch('jsonschema.validate')
+    def test_import_should_be_incorrect_when_citizen_relative_not_exists(self, _):
+        import_data = {'citizens': [{'citizen_id': 1, 'relatives': [2]}]}
+        self.assert_exception(import_data, 'Citizen relative does not exists')
+
+    @unittest.mock.patch('jsonschema.validate')
+    def test_correct_birth_date_should_be_parsed(self, _):
+        import_data = {'citizens': [{'citizen_id': 1, 'birth_date': '01.02.2019', 'relatives': []}]}
+        self.validator.validate_import(import_data)
+        birth_date: datetime = import_data['citizens'][0]['birth_date']
+        self.assertIsInstance(birth_date, datetime)
+        self.assertEqual(1, birth_date.day)
+        self.assertEqual(2, birth_date.month)
+        self.assertEqual(2019, birth_date.year)
+
+    @unittest.mock.patch('jsonschema.validate')
+    def test_import_should_be_incorrect_when_birth_date_in_wrong_format(self, _):
+        import_data = {'citizens': [{'citizen_id': 1, 'birth_date': 'aaaa', 'relatives': []}]}
+        self.assert_exception(import_data, 'Citizen\'s birth_date format is incorrect')
+
+    def test_import_should_be_correct_when_no_citizens(self):
+        import_date = {'citizens': []}
+        self.validator.validate_import(import_date)
 
 
 if __name__ == '__main__':
