@@ -19,7 +19,7 @@
                     "building": {
                         "type": "string"
                     },
-                    "appartement": {
+                    "apartment": {
                         "type": "integer"
                     },
                     "name": {
@@ -38,12 +38,13 @@
                         }
                     }
                 },
+                "additionalProperties": false,
                 "required": [
                     "citizen_id",
                     "town",
                     "street",
                     "building",
-                    "appartement",
+                    "apartment",
                     "name",
                     "birth_date",
                     "gender",
@@ -52,6 +53,7 @@
             }
         }
     },
+    "additionalProperties": false,
     "required": [
         "citizens"
     ]

@@ -5,12 +5,12 @@
       "town": "Москва",
       "street": "Льва Толстого",
       "building": "16к7стр5",
-      "appartement": 7,
+      "apartment": 7,
       "name": "Иванов Иван Иванович",
       "birth_date": "01.02.2000",
       "gender": "male",
       "relatives": [
-        2
+        3
       ]
     },
     {
@@ -18,7 +18,7 @@
       "town": "Челябинск",
       "street": "Воровского",
       "building": "16к7стр5",
-      "appartement": 28,
+      "apartment": 28,
       "name": "Сидорова Анна Александровна",
       "birth_date": "01.02.1984",
       "gender": "female",
@@ -29,7 +29,7 @@
       "town": "Шумиловский",
       "street": "Ленина",
       "building": "16к7стр5",
-      "appartement": 1,
+      "apartment": 1,
       "name": "Зубенко Михаил Петрович",
       "birth_date": "01.02.1998",
       "gender": "male",

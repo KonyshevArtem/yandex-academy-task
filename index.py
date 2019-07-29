@@ -40,7 +40,7 @@ def make_app(db: MongoClient, data_validator: DataValidator) -> Flask:
 
                 db_response: InsertOneResult = db['imports'].insert_one(import_data)
                 if db_response.acknowledged:
-                    response = {"data": {'import_id': import_id}}
+                    response = {'data': {'import_id': import_id}}
                     return response, 201
                 else:
                     return make_error_response('Operation was not acknowledged', 400)
@@ -61,8 +61,6 @@ def main():
 
     config = configparser.ConfigParser()
     config_path = os.path.join(os.path.dirname(__file__), 'config.cfg')
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(config_path)
     config.read(config_path)
     db_uri = config['DATABASE']['DATABASE_URI']
     db_name = config['DATABASE']['DATABASE_NAME']
