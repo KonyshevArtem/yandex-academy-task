@@ -36,3 +36,6 @@ class DataValidator(object):
                 citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
             except ValueError as e:
                 raise ValidationError('Citizen\'s birth_date format is incorrect: ' + str(e))
+
+    def validate_citizen_patch(self, patch_data: dict):
+        pass

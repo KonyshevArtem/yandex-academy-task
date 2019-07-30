@@ -2,56 +2,42 @@ import os
 import unittest
 from unittest.mock import MagicMock
 
-import mockupdb
 from bson import json_util
 from jsonschema import ValidationError
-from pymongo import MongoClient
 
-from data_validator import DataValidator
-from index import make_app
+import tests.test_utils as test_utils
 
 
 class ImportPostTests(unittest.TestCase):
-    @staticmethod
-    def create_mock_validator() -> DataValidator:
-        validator = DataValidator()
-        validator.validate_import = MagicMock()
-        return validator
-
     @classmethod
-    def setUpClass(cls):
-        cls.server = mockupdb.MockupDB(auto_ismaster=True)
-        cls.server.run()
-        cls.db = MongoClient(cls.server.uri)['db']
-        cls.validator = cls.create_mock_validator()
-        cls.app = make_app(cls.db, cls.validator).test_client()
-
-    @staticmethod
-    def read_import_data():
-        document_id = '5a8f1e368f7936badfbb0cfa'
-        with open(os.path.join(os.path.dirname(__file__), 'import.json')) as f:
-            import_data = json_util.loads(f.read())
-        import_data['_id'] = document_id
-        import_data['import_id'] = 0
-        return import_data
+    def setUp(cls):
+        cls.app, cls.db, cls.validator = test_utils.set_up_service()
 
     def test_successful_import_post_should_return_import_id(self):
         headers = [('Content-Type', 'application/json')]
-        import_data = self.read_import_data()
-        document_id = str(import_data['_id'])
-        import_id = import_data['import_id']
+        import_data = test_utils.read_import_data()
+        import_id = 0
 
-        future = mockupdb.go(self.app.post, '/imports', data=json_util.dumps(import_data), headers=headers)
-        if self.server.got(mockupdb.OpMsg({'count': 'imports'}, namespace='db')):
-            self.server.ok(n=0)
-        if self.server.got(mockupdb.OpMsg({'insert': 'imports', 'documents': [import_data]}, namespace='db')):
-            self.server.ok(cursor={'inserted_id': document_id})
-
-        http_response = future()
+        http_response = self.app.post('/imports', data=json_util.dumps(import_data), headers=headers)
 
         response_data = http_response.get_json()
+        import_data['import_id'] = import_id
         self.assertEqual(import_id, response_data['data']['import_id'])
         self.assertEqual(http_response.status_code, 201)
+        self.assertEqual(import_data, self.db['imports'].find_one({'import_id': import_id}, {'_id': 0}))
+
+    def test_import_id_should_increase_for_each_import(self):
+        headers = [('Content-Type', 'application/json')]
+        import_data = test_utils.read_import_data()
+
+        for import_id in range(2):
+            http_response = self.app.post('/imports', data=json_util.dumps(import_data), headers=headers)
+
+            response_data = http_response.get_json()
+            import_data['import_id'] = import_id
+            self.assertEqual(import_id, response_data['data']['import_id'])
+            self.assertEqual(http_response.status_code, 201)
+            self.assertEqual(import_data, self.db['imports'].find_one({'import_id': import_id}, {'_id': 0}))
 
     def test_when_no_content_type_should_return_bad_request(self):
         http_response = self.app.post('/imports', data=json_util.dumps({'test': 1}))
@@ -62,15 +48,11 @@ class ImportPostTests(unittest.TestCase):
 
     def test_when_database_error_should_return_bad_request(self):
         headers = [('Content-Type', 'application/json')]
-        import_data = self.read_import_data()
+        import_data = {'_id': '5a8f1e368f7936badfbb0cfa'}
 
-        future = mockupdb.go(self.app.post, '/imports', data=json_util.dumps(import_data), headers=headers)
-        if self.server.got(mockupdb.OpMsg({'count': 'imports'}, namespace='db')):
-            self.server.ok(n=0)
-        if self.server.got(mockupdb.OpMsg({'insert': 'imports', 'documents': [import_data]}, namespace='db')):
-            self.server.command_err(11000, 'message')
+        self.app.post('/imports', data=json_util.dumps(import_data), headers=headers)
+        http_response = self.app.post('/imports', data=json_util.dumps(import_data), headers=headers)
 
-        http_response = future()
         http_data = http_response.get_data(as_text=True)
         self.assertIn('Database error: ', http_data)
         self.assertEqual(400, http_response.status_code)
@@ -93,10 +75,6 @@ class ImportPostTests(unittest.TestCase):
             response_data = http_response.get_data(as_text=True)
             self.assertIn('Import data is not valid', response_data)
             self.assertEqual(400, http_response.status_code)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.server.stop()
 
 
 if __name__ == '__main__':
