@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 import unittest
 
@@ -12,6 +13,7 @@ class CitizenPatchValidatorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_validator = DataValidator()
+        logging.disable(logging.CRITICAL)
 
     def assert_exception(self, citizen_id: int, patch_data: dict, expected_exception_message: str):
         with self.assertRaises(ValidationError) as context:
@@ -68,3 +70,7 @@ class CitizenPatchValidatorTests(unittest.TestCase):
     def test_patch_should_be_incorrect_when_relatives_not_unique(self, _):
         patch_data = {'relatives': [1, 1]}
         self.assert_exception(0, patch_data, 'Relatives ids should be unique')
+
+
+if __name__ == '__main__':
+    unittest.main()

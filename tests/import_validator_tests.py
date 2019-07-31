@@ -1,3 +1,4 @@
+import logging
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -13,6 +14,7 @@ class ImportValidatorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_validator = DataValidator()
+        logging.disable(logging.CRITICAL)
 
     def test_correct_import_should_be_valid(self):
         import_data = test_utils.read_data('import.json')

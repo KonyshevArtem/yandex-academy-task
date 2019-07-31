@@ -1,3 +1,4 @@
+import logging
 import unittest
 from datetime import datetime
 
@@ -13,6 +14,7 @@ class CitizensGetTests(unittest.TestCase):
             citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
         import_data['import_id'] = 0
         cls.db['imports'].insert_one(import_data)
+        logging.disable(logging.CRITICAL)
 
     def test_should_return_citizens_when_id_correct(self):
         http_response = self.app.get('/imports/0/citizens')
@@ -26,3 +28,7 @@ class CitizensGetTests(unittest.TestCase):
         response_data = http_response.get_data(as_text=True)
         self.assertEqual(400, http_response.status_code)
         self.assertIn('Import with specified id not found', response_data)
+
+
+if __name__ == '__main__':
+    unittest.main()

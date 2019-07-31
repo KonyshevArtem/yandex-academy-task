@@ -1,3 +1,4 @@
+import logging
 import unittest
 from unittest.mock import MagicMock
 
@@ -15,6 +16,7 @@ class CitizenPatchTests(unittest.TestCase):
         import_data = test_utils.read_data('import.json')
         import_data['import_id'] = 0
         cls.db['imports'].insert_one(import_data)
+        logging.disable(logging.CRITICAL)
 
     def test_update_db_when_patch_received(self):
         headers = [('Content-Type', 'application/json')]
@@ -58,7 +60,7 @@ class CitizenPatchTests(unittest.TestCase):
             http_response = self.app.patch('/imports/0/citizens/1', data=json_util.dumps(patch_data), headers=headers)
 
             response_data = http_response.get_data(as_text=True)
-            self.assertIn('Citizen patch is not valid', response_data)
+            self.assertIn('Input data is not valid', response_data)
             self.assertEqual(400, http_response.status_code)
 
     def test_should_return_bad_request_when_incorrect_json(self):

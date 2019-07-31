@@ -1,3 +1,4 @@
+import logging
 import unittest
 from unittest.mock import MagicMock
 
@@ -11,6 +12,7 @@ class ImportPostTests(unittest.TestCase):
     @classmethod
     def setUp(cls):
         cls.app, cls.db, cls.validator = test_utils.set_up_service()
+        logging.disable(logging.CRITICAL)
 
     def test_successful_import_post_should_return_import_id(self):
         headers = [('Content-Type', 'application/json')]
@@ -72,7 +74,7 @@ class ImportPostTests(unittest.TestCase):
             http_response = self.app.post('/imports', data=json_util.dumps({'test': 1}), headers=headers)
 
             response_data = http_response.get_data(as_text=True)
-            self.assertIn('Import data is not valid', response_data)
+            self.assertIn('Input data is not valid', response_data)
             self.assertEqual(400, http_response.status_code)
 
 
