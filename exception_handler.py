@@ -8,6 +8,7 @@ from pymongo.errors import PyMongoError
 from werkzeug.exceptions import BadRequest
 
 log_path = os.path.join(os.path.dirname(__file__), 'logs', 'service.log')
+os.makedirs(os.path.dirname(log_path), exist_ok=True)
 logging.basicConfig(filename=log_path, format=f'[%(asctime)s] %(levelname)-8s %(message)s')
 logger = logging.getLogger(__name__)
 
