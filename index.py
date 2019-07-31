@@ -116,6 +116,21 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
         except Exception as e:
             return make_error_response(str(e), 400)
 
+    @app.route('/imports/<int:import_id>/citizens', methods=['GET'])
+    def citizens(import_id: int):
+        try:
+            with locks[str(import_id)]:
+                import_data = db['imports'].find_one({'import_id': import_id}, {'_id': 0, 'import_id': 0})
+                if import_data is None:
+                    return make_error_response('Import with specified id not found', 400)
+                for citizen in import_data['citizens']:
+                    citizen['birth_date'] = citizen['birth_date'].strftime('%d.%m.%Y')
+                return {'data': import_data['citizens']}, 201
+        except PyMongoError as e:
+            return make_error_response('Database error: ' + str(e), 400)
+        except Exception as e:
+            return make_error_response(str(e), 400)
+
     return app
 
 
