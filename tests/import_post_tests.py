@@ -14,7 +14,7 @@ class ImportPostTests(unittest.TestCase):
 
     def test_successful_import_post_should_return_import_id(self):
         headers = [('Content-Type', 'application/json')]
-        import_data = test_utils.read_import_data()
+        import_data = test_utils.read_data('import.json')
         import_id = 0
 
         http_response = self.app.post('/imports', data=json_util.dumps(import_data), headers=headers)
@@ -27,7 +27,7 @@ class ImportPostTests(unittest.TestCase):
 
     def test_import_id_should_increase_for_each_import(self):
         headers = [('Content-Type', 'application/json')]
-        import_data = test_utils.read_import_data()
+        import_data = test_utils.read_data('import.json')
 
         for import_id in range(2):
             http_response = self.app.post('/imports', data=json_util.dumps(import_data), headers=headers)

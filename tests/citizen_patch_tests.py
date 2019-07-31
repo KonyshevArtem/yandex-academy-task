@@ -12,7 +12,7 @@ class CitizenPatchTests(unittest.TestCase):
     @classmethod
     def setUp(cls):
         cls.app, cls.db, cls.validator = test_utils.set_up_service()
-        import_data = test_utils.read_import_data()
+        import_data = test_utils.read_data('import.json')
         import_data['import_id'] = 0
         cls.db['imports'].insert_one(import_data)
 

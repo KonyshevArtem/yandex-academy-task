@@ -1,13 +1,12 @@
-import os
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from bson import json_util
 from jsonschema import ValidationError
 from parameterized import parameterized
 
 from data_validator import DataValidator
+from tests import test_utils
 
 
 class ImportValidatorTests(unittest.TestCase):
@@ -16,8 +15,7 @@ class ImportValidatorTests(unittest.TestCase):
         cls.data_validator = DataValidator()
 
     def test_correct_import_should_be_valid(self):
-        with open(os.path.join(os.path.dirname(__file__), 'import.json')) as f:
-            import_data = json_util.loads(f.read())
+        import_data = test_utils.read_data('import.json')
         self.data_validator.validate_import(import_data)
 
     def assert_exception(self, import_data: dict, expected_exception_message: str):
@@ -130,11 +128,16 @@ class ImportValidatorTests(unittest.TestCase):
     @unittest.mock.patch('jsonschema.validate')
     def test_import_should_be_incorrect_when_birth_date_in_wrong_format(self, _):
         import_data = {'citizens': [{'citizen_id': 1, 'birth_date': 'aaaa', 'relatives': []}]}
-        self.assert_exception(import_data, 'Citizen\'s birth_date format is incorrect')
+        self.assert_exception(import_data, 'birth_date format is incorrect')
 
     def test_import_should_be_correct_when_no_citizens(self):
-        import_date = {'citizens': []}
-        self.data_validator.validate_import(import_date)
+        import_data = {'citizens': []}
+        self.data_validator.validate_import(import_data)
+
+    @unittest.mock.patch('jsonschema.validate')
+    def test_import_should_be_incorrect_when_relatives_not_unique(self, _):
+        import_data = {'citizens': [{'citizen_id': 0, 'relatives': [1, 1]}]}
+        self.assert_exception(import_data, 'Relatives ids should be unique')
 
 
 if __name__ == '__main__':

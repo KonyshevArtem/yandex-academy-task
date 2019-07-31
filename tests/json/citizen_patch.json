@@ -1,0 +1,12 @@
+{
+    "town": "Москва",
+    "street": "Льва Толстого",
+    "building": "16к7стр5",
+    "apartment": 7,
+    "name": "Иванов Иван Иванович",
+    "birth_date": "01.02.2000",
+    "gender": "male",
+    "relatives": [
+        3
+    ]
+}

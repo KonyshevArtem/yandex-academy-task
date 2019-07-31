@@ -67,43 +67,46 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
 
         try:
             patch_data = request.get_json()
-            data_validator.validate_citizen_patch(patch_data)
-            if 'relatives' in patch_data:
-                old_relatives_response: dict = db['imports'].find_one({'import_id': import_id},
-                                                                      {'citizens': {
-                                                                          '$elemMatch': {'citizen_id': citizen_id}}})
-                if old_relatives_response is None:
-                    return make_error_response('Import or citizen with specified id not found', 400)
-                old_relatives = set(old_relatives_response['citizens'][0]['relatives'])
-                new_relatives = set(patch_data['relatives'])
-                to_push = new_relatives - old_relatives
-                to_pull = old_relatives - new_relatives
-                db_requests = []
-                if len(to_push) > 0:
-                    db_requests.append(make_update_relative_request('$push', list(to_push)))
-                if len(to_pull) > 0:
-                    db_requests.append(make_update_relative_request('$pull', list(to_pull)))
-                if len(db_requests) > 0:
-                    bulk_response: BulkWriteResult = db['imports'].bulk_write(db_requests)
-                    if bulk_response.modified_count != len(db_requests):
-                        return make_error_response('Relative with specified id not found', 400)
+            data_validator.validate_citizen_patch(citizen_id, patch_data)
 
-            update_data = {
-                '$set': {f'citizens.$.{key}': val for key, val in patch_data.items()}
-            }
-            projection = {
-                '_id': 0,
-                'import_id': 0,
-                'citizens': {
-                    '$elemMatch': {'citizen_id': citizen_id}
+            with locks[str(import_id)]:
+                if 'relatives' in patch_data:
+                    old_relatives_response: dict = db['imports'].find_one({'import_id': import_id},
+                                                                          {'citizens': {
+                                                                              '$elemMatch': {
+                                                                                  'citizen_id': citizen_id}}})
+                    if old_relatives_response is None:
+                        return make_error_response('Import or citizen with specified id not found', 400)
+                    old_relatives = set(old_relatives_response['citizens'][0]['relatives'])
+                    new_relatives = set(patch_data['relatives'])
+                    to_push = new_relatives - old_relatives
+                    to_pull = old_relatives - new_relatives
+                    db_requests = []
+                    if to_push:
+                        db_requests.append(make_update_relative_request('$push', list(to_push)))
+                    if to_pull:
+                        db_requests.append(make_update_relative_request('$pull', list(to_pull)))
+                    if db_requests:
+                        bulk_response: BulkWriteResult = db['imports'].bulk_write(db_requests)
+                        if bulk_response.modified_count != len(db_requests):
+                            return make_error_response('Relative with specified id not found', 400)
+
+                update_data = {
+                    '$set': {f'citizens.$.{key}': val for key, val in patch_data.items()}
                 }
-            }
-            db_response: dict = db['imports'].find_one_and_update(
-                filter={'import_id': import_id, 'citizens.citizen_id': citizen_id}, update=update_data,
-                projection=projection, return_document=ReturnDocument.AFTER)
-            if db_response is None:
-                return make_error_response('Import or citizen with specified id not found', 400)
-            return {'data': db_response['citizens'][0]}, 201
+                projection = {
+                    '_id': 0,
+                    'import_id': 0,
+                    'citizens': {
+                        '$elemMatch': {'citizen_id': citizen_id}
+                    }
+                }
+                db_response: dict = db['imports'].find_one_and_update(
+                    filter={'import_id': import_id, 'citizens.citizen_id': citizen_id}, update=update_data,
+                    projection=projection, return_document=ReturnDocument.AFTER)
+                if db_response is None:
+                    return make_error_response('Import or citizen with specified id not found', 400)
+                return {'data': db_response['citizens'][0]}, 201
         except ValidationError as e:
             return make_error_response('Citizen patch is not valid: ' + str(e), 400)
         except BadRequest as e:
