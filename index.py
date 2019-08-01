@@ -1,6 +1,8 @@
 import configparser
+import logging
 import os
 from collections import defaultdict
+from datetime import datetime
 from multiprocessing import Lock
 
 from flask import Flask, request
@@ -13,6 +15,8 @@ from werkzeug.exceptions import BadRequest
 from data_validator import DataValidator
 from exception_handler import handle_exceptions
 
+logger = logging.getLogger(__name__)
+
 
 def make_app(db: Database, data_validator: DataValidator) -> Flask:
     app = Flask(__name__)
@@ -20,13 +24,25 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
     locks = defaultdict(Lock)
 
     @app.route('/imports', methods=['POST'])
-    @handle_exceptions
+    @handle_exceptions(logger)
     def imports():
+        """
+        Принимает на вход набор с данными о жителях в формате json
+        и сохраняет его с уникальным идентификатором import_id.
+
+        :raises: :class:`BadRequest`: Content-Type в заголовке запроса не равен application/json
+        :raises: :class:`PyMongoError`: Операция записи в базу данных не была разрешена
+
+        :returns: В случае успеха возвращается ответ с идентификатором импорта
+        :rtype: flask.Response
+        """
         if not request.is_json:
             raise BadRequest('Content-Type must be application/json')
 
         import_data = request.get_json()
         data_validator.validate_import(import_data)
+        for citizen in import_data['citizens']:
+            citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
 
         with locks['post_imports']:
             import_id = db['imports'].count()
@@ -40,8 +56,20 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
                 raise PyMongoError('Operation was not acknowledged')
 
     @app.route('/imports/<int:import_id>/citizens/<int:citizen_id>', methods=['PATCH'])
-    @handle_exceptions
+    @handle_exceptions(logger)
     def citizen(import_id: int, citizen_id: int):
+        """
+        Изменяет информацию о жителе в указанном наборе данных.
+        На вход подается JSON в котором можно указать любые данные о жителе.
+
+        :param int import_id: Уникальный идентификатор поставки, в которой изменяется информация о жителе
+        :param int citizen_id: Уникальный индентификатор жителя в поставке
+        :raises: :class:`BadRequest`: Content-Type в заголовке запроса не равен application/json
+        :raises: :class:`PyMongoError`: Объект с указанным уникальным идентификатором не был найден в базе данных
+
+        :return: Актуальная информация об указанном жителе
+        :rtype: flask.Response
+        """
 
         def make_update_relative_request(operation: str, relative_ids: list):
             return UpdateMany({'import_id': import_id},
@@ -53,6 +81,8 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
 
         patch_data = request.get_json()
         data_validator.validate_citizen_patch(citizen_id, patch_data)
+        if 'birth_date' in patch_data:
+            patch_data['birth_date'] = datetime.strptime(patch_data['birth_date'], '%d.%m.%Y')
 
         with locks[str(import_id)]:
             if 'relatives' in patch_data:
@@ -94,8 +124,17 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
             return {'data': db_response['citizens'][0]}, 201
 
     @app.route('/imports/<int:import_id>/citizens', methods=['GET'])
-    @handle_exceptions
+    @handle_exceptions(logger)
     def citizens(import_id: int):
+        """
+        Возвращает список всех жителей для указанного набора данных.
+
+        :param int import_id: Уникальный идентификатор поставки
+        :raises: :class:`PyMongoError`: Объект с указанным уникальным идентификатором не был найден в базе данных
+
+        :return: Список жителей в указанной поставке
+        :rtype: flask.Response
+        """
         with locks[str(import_id)]:
             import_data = db['imports'].find_one({'import_id': import_id}, {'_id': 0, 'import_id': 0})
             if import_data is None:

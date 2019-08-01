@@ -11,18 +11,39 @@ from index import make_app
 
 
 def create_mock_validator() -> DataValidator:
+    """
+    Создает фейковый экземпляр класса DataValidator
+
+    :return: фейковый экземпляр класса DataValidator
+    :rtype: DataValidator
+    """
     validator = DataValidator()
     validator.validate_import = MagicMock()
+    validator.validate_citizen_patch = MagicMock()
     return validator
 
 
 def read_data(filename: str) -> dict:
+    """
+    Считывает JSON из указанного файла.
+
+    :param str filename: имя файла из которого нужно считать JSON
+
+    :return: считанный объект
+    :rtype: dict
+    """
     with open(os.path.join(os.path.dirname(__file__), 'json', filename)) as f:
         import_data = json_util.loads(f.read())
     return import_data
 
 
 def set_up_service() -> Tuple[Flask, MongoClient, DataValidator]:
+    """
+    Производит подготовку сервиса к тестированию.
+
+    :return: Запущенный сервис, фейковый монго клиент, фейковый валидатор
+    :rtype: Tuple[Flask, MongoClient, DataValidator]
+    """
     db = MongoClient()['db']
     validator = create_mock_validator()
     app = make_app(db, validator).test_client()

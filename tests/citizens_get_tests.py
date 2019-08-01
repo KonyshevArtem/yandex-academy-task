@@ -1,4 +1,3 @@
-import logging
 import unittest
 from datetime import datetime
 
@@ -14,7 +13,6 @@ class CitizensGetTests(unittest.TestCase):
             citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
         import_data['import_id'] = 0
         cls.db['imports'].insert_one(import_data)
-        logging.disable(logging.CRITICAL)
 
     def test_should_return_citizens_when_id_correct(self):
         http_response = self.app.get('/imports/0/citizens')

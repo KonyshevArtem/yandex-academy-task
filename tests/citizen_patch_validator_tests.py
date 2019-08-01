@@ -1,5 +1,3 @@
-import logging
-from datetime import datetime
 import unittest
 
 from jsonschema import ValidationError
@@ -13,7 +11,6 @@ class CitizenPatchValidatorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_validator = DataValidator()
-        logging.disable(logging.CRITICAL)
 
     def assert_exception(self, citizen_id: int, patch_data: dict, expected_exception_message: str):
         with self.assertRaises(ValidationError) as context:
@@ -45,21 +42,6 @@ class CitizenPatchValidatorTests(unittest.TestCase):
     ])
     def test_patch_should_be_incorrect_when_wrong_type_of_field(self, patch_data: dict, data_type: str):
         self.assert_exception(0, patch_data, f'is not of type \'{data_type}\'')
-
-    @unittest.mock.patch('jsonschema.validate')
-    def test_correct_birth_date_should_be_parsed(self, _):
-        patch_data = {'birth_date': '01.02.2019'}
-        self.data_validator.validate_citizen_patch(0, patch_data)
-        birth_date: datetime = patch_data['birth_date']
-        self.assertIsInstance(birth_date, datetime)
-        self.assertEqual(1, birth_date.day)
-        self.assertEqual(2, birth_date.month)
-        self.assertEqual(2019, birth_date.year)
-
-    @unittest.mock.patch('jsonschema.validate')
-    def test_patch_should_be_incorrect_when_birth_date_in_wrong_format(self, _):
-        patch_data = {'birth_date': 'aaaa'}
-        self.assert_exception(0, patch_data, 'birth_date format is incorrect')
 
     @unittest.mock.patch('jsonschema.validate')
     def test_patch_should_be_incorrect_when_relatives_contains_citizen_id(self, _):

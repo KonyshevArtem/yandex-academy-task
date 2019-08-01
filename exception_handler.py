@@ -1,5 +1,4 @@
 import logging
-import os
 from functools import wraps
 from typing import Tuple
 
@@ -7,29 +6,45 @@ from jsonschema import ValidationError
 from pymongo.errors import PyMongoError
 from werkzeug.exceptions import BadRequest
 
-log_path = os.path.join(os.path.dirname(__file__), 'logs', 'service.log')
-os.makedirs(os.path.dirname(log_path), exist_ok=True)
-logging.basicConfig(filename=log_path, format=f'[%(asctime)s] %(levelname)-8s %(message)s')
-logger = logging.getLogger(__name__)
 
+def make_error_response(logger: logging.Logger, message: str, status_code: int) -> Tuple[dict, int]:
+    """
+    Логирует ошибку и возвращает пару из объекта, содержащего сообщение, и кода ошибки
 
-def make_error_response(message: str, status_code: int) -> Tuple[dict, int]:
+    :param logging.Logger logger: логгер, которым логируется ошибка
+    :param str message: Сообщение, поясняющее ошибку
+    :param int status_code: HTTP код ошибки
+    :return: Пара из объекта, содержащего сообщение, и кода ошибки
+    :rtype: Tuple[dict, int]
+    """
     logger.exception(message)
     return {'message': message}, status_code
 
 
-def handle_exceptions(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except ValidationError as e:
-            return make_error_response('Input data is not valid: ' + str(e), 400)
-        except BadRequest as e:
-            return make_error_response('Error when parsing JSON: ' + str(e), 400)
-        except PyMongoError as e:
-            return make_error_response('Database error: ' + str(e), 400)
-        except Exception as e:
-            return make_error_response(str(e), 400)
+def handle_exceptions(logger: logging.Logger):
+    """
+    Декоратор, обворачивающий указанную функцию в блок обработки ошибок.
 
-    return wrap
+    Логирует все появивишиеся ошибки с помощью логгера, переданного на вход.
+    :param logging.Logger logger: логгер, которым логируется возникающие ошибки
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrap(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except ValidationError as e:
+                return make_error_response(logger, 'Input data is not valid: ' + str(e), 400)
+            except BadRequest as e:
+                return make_error_response(logger, 'Error when parsing JSON: ' + str(e), 400)
+            except PyMongoError as e:
+                return make_error_response(logger, 'Database error: ' + str(e), 400)
+            except ValueError as e:
+                return make_error_response(logger, 'Value error: ' + str(e), 400)
+            except Exception as e:
+                return make_error_response(logger, str(e), 400)
+
+        return wrap
+
+    return decorator

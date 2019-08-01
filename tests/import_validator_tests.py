@@ -1,6 +1,4 @@
-import logging
 import unittest
-from datetime import datetime
 from unittest.mock import MagicMock
 
 from jsonschema import ValidationError
@@ -14,16 +12,15 @@ class ImportValidatorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_validator = DataValidator()
-        logging.disable(logging.CRITICAL)
-
-    def test_correct_import_should_be_valid(self):
-        import_data = test_utils.read_data('import.json')
-        self.data_validator.validate_import(import_data)
 
     def assert_exception(self, import_data: dict, expected_exception_message: str):
         with self.assertRaises(ValidationError) as context:
             self.data_validator.validate_import(import_data)
         self.assertIn(expected_exception_message, str(context.exception))
+
+    def test_correct_import_should_be_valid(self):
+        import_data = test_utils.read_data('import.json')
+        self.data_validator.validate_import(import_data)
 
     @parameterized.expand([
         ({}, 'citizens'),
@@ -116,21 +113,6 @@ class ImportValidatorTests(unittest.TestCase):
     def test_import_should_be_incorrect_when_citizen_relative_not_exists(self, _):
         import_data = {'citizens': [{'citizen_id': 1, 'relatives': [2]}]}
         self.assert_exception(import_data, 'Citizen relative does not exists')
-
-    @unittest.mock.patch('jsonschema.validate')
-    def test_correct_birth_date_should_be_parsed(self, _):
-        import_data = {'citizens': [{'citizen_id': 1, 'birth_date': '01.02.2019', 'relatives': []}]}
-        self.data_validator.validate_import(import_data)
-        birth_date: datetime = import_data['citizens'][0]['birth_date']
-        self.assertIsInstance(birth_date, datetime)
-        self.assertEqual(1, birth_date.day)
-        self.assertEqual(2, birth_date.month)
-        self.assertEqual(2019, birth_date.year)
-
-    @unittest.mock.patch('jsonschema.validate')
-    def test_import_should_be_incorrect_when_birth_date_in_wrong_format(self, _):
-        import_data = {'citizens': [{'citizen_id': 1, 'birth_date': 'aaaa', 'relatives': []}]}
-        self.assert_exception(import_data, 'birth_date format is incorrect')
 
     def test_import_should_be_correct_when_no_citizens(self):
         import_data = {'citizens': []}
