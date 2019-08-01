@@ -6,6 +6,14 @@ from jsonschema import ValidationError
 
 
 class DataValidator(object):
+    """
+    Класс для валидации данных, приходящих в запросе.
+
+    При создании экземпляра загружаются JSON схемы.
+    :ivar: dict import_schema: JSON схема для данных поставки
+    :ivar: dict citizen_patch_schema: JSON схемя для данных модификации жителя
+    """
+
     def __init__(self):
         self.import_schema = _load_schema('import_schema.json')
         self.citizen_patch_schema = _load_schema('citizen_patch_schema.json')

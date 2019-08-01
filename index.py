@@ -1,4 +1,3 @@
-import configparser
 import logging
 import os
 from collections import defaultdict
@@ -84,44 +83,47 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
         if 'birth_date' in patch_data:
             patch_data['birth_date'] = datetime.strptime(patch_data['birth_date'], '%d.%m.%Y')
 
-        with locks[str(import_id)]:
-            if 'relatives' in patch_data:
-                old_relatives_response: dict = db['imports'].find_one({'import_id': import_id},
-                                                                      {'citizens': {
-                                                                          '$elemMatch': {
-                                                                              'citizen_id': citizen_id}}})
-                if old_relatives_response is None:
-                    raise PyMongoError('Import or citizen with specified id not found')
-                old_relatives = set(old_relatives_response['citizens'][0]['relatives'])
-                new_relatives = set(patch_data['relatives'])
-                to_push = new_relatives - old_relatives
-                to_pull = old_relatives - new_relatives
-                db_requests = []
-                if to_push:
-                    db_requests.append(make_update_relative_request('$push', list(to_push)))
-                if to_pull:
-                    db_requests.append(make_update_relative_request('$pull', list(to_pull)))
-                if db_requests:
-                    bulk_response: BulkWriteResult = db['imports'].bulk_write(db_requests)
-                    if bulk_response.modified_count != len(db_requests):
-                        raise PyMongoError('Relative with specified id not found')
+        with db.client.start_session() as session:
+            with session.start_transaction():
+                with locks[str(import_id)]:
+                    if 'relatives' in patch_data:
+                        old_relatives_response: dict = db['imports'].find_one({'import_id': import_id},
+                                                                              {'citizens': {
+                                                                                  '$elemMatch': {
+                                                                                      'citizen_id': citizen_id}}},
+                                                                              session=session)
+                        if old_relatives_response is None:
+                            raise PyMongoError('Import or citizen with specified id not found')
+                        old_relatives = set(old_relatives_response['citizens'][0]['relatives'])
+                        new_relatives = set(patch_data['relatives'])
+                        to_push = new_relatives - old_relatives
+                        to_pull = old_relatives - new_relatives
+                        db_requests = []
+                        if to_push:
+                            db_requests.append(make_update_relative_request('$push', list(to_push)))
+                        if to_pull:
+                            db_requests.append(make_update_relative_request('$pull', list(to_pull)))
+                        if db_requests:
+                            bulk_response: BulkWriteResult = db['imports'].bulk_write(db_requests, session=session)
+                            if bulk_response.modified_count != len(db_requests):
+                                raise PyMongoError('Relative with specified id not found')
 
-            update_data = {
-                '$set': {f'citizens.$.{key}': val for key, val in patch_data.items()}
-            }
-            projection = {
-                '_id': 0,
-                'import_id': 0,
-                'citizens': {
-                    '$elemMatch': {'citizen_id': citizen_id}
-                }
-            }
-            db_response: dict = db['imports'].find_one_and_update(
-                filter={'import_id': import_id, 'citizens.citizen_id': citizen_id}, update=update_data,
-                projection=projection, return_document=ReturnDocument.AFTER)
-            if db_response is None:
-                raise PyMongoError('Import or citizen with specified id not found')
-            return {'data': db_response['citizens'][0]}, 201
+                    update_data = {
+                        '$set': {f'citizens.$.{key}': val for key, val in patch_data.items()}
+                    }
+                    projection = {
+                        '_id': 0,
+                        'import_id': 0,
+                        'citizens': {
+                            '$elemMatch': {'citizen_id': citizen_id}
+                        }
+                    }
+                    db_response: dict = db['imports'].find_one_and_update(
+                        filter={'import_id': import_id, 'citizens.citizen_id': citizen_id}, update=update_data,
+                        projection=projection, return_document=ReturnDocument.AFTER, session=session)
+                    if db_response is None:
+                        raise PyMongoError('Import or citizen with specified id not found')
+                    return {'data': db_response['citizens'][0]}, 201
 
     @app.route('/imports/<int:import_id>/citizens', methods=['GET'])
     @handle_exceptions(logger)
@@ -146,14 +148,23 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
     return app
 
 
+def prepare_db(db: MongoClient):
+    """
+    Создает необходимые индексы в базе данных.
+
+    :param MongoClient db: клиент базы данных
+    """
+    db['imports'].create_index([('import_id', 1)], unique=True)
+    db['imports'].create_index([('citizens.citizen_id', 1)])
+    db['imports'].create_index([('import_id', 1), ('citizens.citizen_id', 1)], unique=True)
+
+
 def main():
-    config = configparser.ConfigParser()
-    config_path = os.path.join(os.path.dirname(__file__), 'config.cfg')
-    config.read(config_path)
-    db_uri = config['DATABASE']['DATABASE_URI']
-    db_name = config['DATABASE']['DATABASE_NAME']
+    db_uri = os.environ['DATABASE_URI']
+    db_name = os.environ['DATABASE_NAME']
 
     db = MongoClient(db_uri)[db_name]
+    prepare_db(db)
     data_validator = DataValidator()
     app = make_app(db, data_validator)
     app.run(host='0.0.0.0', port=8080)
