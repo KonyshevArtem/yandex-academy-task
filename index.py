@@ -150,10 +150,14 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
 
 def prepare_db(db: MongoClient):
     """
-    Создает необходимые индексы в базе данных.
+    Инициализирует replica set и создает необходимые индексы в базе данных.
 
     :param MongoClient db: клиент базы данных
     """
+    try:
+        db.client.admin.command('replSetInitiate')
+    except PyMongoError:
+        print('Replica set already initialized')
     db['imports'].create_index([('import_id', 1)], unique=True)
     db['imports'].create_index([('citizens.citizen_id', 1)])
     db['imports'].create_index([('import_id', 1), ('citizens.citizen_id', 1)], unique=True)
@@ -162,8 +166,9 @@ def prepare_db(db: MongoClient):
 def main():
     db_uri = os.environ['DATABASE_URI']
     db_name = os.environ['DATABASE_NAME']
+    replica_set = os.environ['REPLICA_SET']
 
-    db = MongoClient(db_uri)[db_name]
+    db = MongoClient(db_uri, 27017, replicaset=replica_set)[db_name]
     prepare_db(db)
     data_validator = DataValidator()
     app = make_app(db, data_validator)

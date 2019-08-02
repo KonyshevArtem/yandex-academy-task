@@ -1,0 +1,19 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+    links:
+      - mongo
+    environment:
+      - DATABASE_URI=mongo
+      - DATABASE_NAME=db
+      - REPLICA_SET=r0
+  mongo:
+    image: mongo
+    volumes:
+      - "~/docker/mongo:/data/db"
+    command: --replSet r0
