@@ -148,16 +148,26 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
     return app
 
 
-def prepare_db(db: MongoClient):
+def initiate_replica_set(db_uri: str):
     """
-    Инициализирует replica set и создает необходимые индексы в базе данных.
+    Инициализирует replica set
+    :param str db_uri: ссылка для подключения к базе данных
+    """
+    client = MongoClient(db_uri, 27017)
+    try:
+        client.admin.command('replSetInitiate')
+    except PyMongoError:
+        logger.info('Replication set already initialized')
+    finally:
+        client.close()
+
+
+def create_db_indexes(db: MongoClient):
+    """
+    Создает необходимые индексы в базе данных.
 
     :param MongoClient db: клиент базы данных
     """
-    try:
-        db.client.admin.command('replSetInitiate')
-    except PyMongoError:
-        print('Replica set already initialized')
     db['imports'].create_index([('import_id', 1)], unique=True)
     db['imports'].create_index([('citizens.citizen_id', 1)])
     db['imports'].create_index([('import_id', 1), ('citizens.citizen_id', 1)], unique=True)
@@ -168,8 +178,10 @@ def main():
     db_name = os.environ['DATABASE_NAME']
     replica_set = os.environ['REPLICA_SET']
 
+    initiate_replica_set(db_uri)
+
     db = MongoClient(db_uri, 27017, replicaset=replica_set)[db_name]
-    prepare_db(db)
+    create_db_indexes(db)
     data_validator = DataValidator()
     app = make_app(db, data_validator)
     app.run(host='0.0.0.0', port=8080)

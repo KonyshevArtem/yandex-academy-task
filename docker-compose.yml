@@ -11,9 +11,9 @@ services:
     environment:
       - DATABASE_URI=mongo
       - DATABASE_NAME=db
-      - REPLICA_SET=r0
+      - REPLICA_SET=rs0
   mongo:
     image: mongo
     volumes:
       - "~/docker/mongo:/data/db"
-    command: --replSet r0
+    command: --replSet rs0
