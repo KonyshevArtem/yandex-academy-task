@@ -80,6 +80,16 @@ class CitizenPatchTests(unittest.TestCase):
         self.assertIn('does not match format', response_data)
         self.assertEqual(400, http_response.status_code)
 
+    def test_should_return_correct_birth_date(self):
+        headers = [('Content-Type', 'application/json')]
+        patch_data = {'birth_date': '01.01.2012'}
+
+        http_response = self.app.patch('/imports/0/citizens/1', data=json_util.dumps(patch_data), headers=headers)
+
+        response_data = http_response.get_json()
+        self.assertEqual(http_response.status_code, 201)
+        self.assertEqual(patch_data['birth_date'], response_data['data']['birth_date'])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -123,6 +123,8 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
                         projection=projection, return_document=ReturnDocument.AFTER, session=session)
                     if db_response is None:
                         raise PyMongoError('Import or citizen with specified id not found')
+                    birth_date = db_response['citizens'][0]['birth_date']
+                    db_response['citizens'][0]['birth_date'] = birth_date.strftime('%d.%m.%Y')
                     return {'data': db_response['citizens'][0]}, 201
 
     @app.route('/imports/<int:import_id>/citizens', methods=['GET'])
