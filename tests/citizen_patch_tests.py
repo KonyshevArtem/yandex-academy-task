@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from unittest.mock import MagicMock
 
 from bson import json_util
@@ -14,6 +15,8 @@ class CitizenPatchTests(unittest.TestCase):
         cls.app, cls.db, cls.validator = test_utils.set_up_service()
         import_data = test_utils.read_data('import.json')
         import_data['import_id'] = 0
+        for citizen in import_data['citizens']:
+            citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
         cls.db['imports'].insert_one(import_data)
 
     def test_update_db_when_patch_received(self):
