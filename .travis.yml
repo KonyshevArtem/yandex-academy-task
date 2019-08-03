@@ -8,7 +8,7 @@ before_install:
     -in .travis/deploy_key.enc -out /tmp/deploy_key -d
 after_success:
   - eval "$(ssh-agent -s)"
-  - chmod 600 /tmp/deploy_key.enc
-  - ssh-add /tmp/deploy_key.enc
+  - chmod 600 /tmp/deploy_key
+  - ssh-add /tmp/deploy_key
   - git remote add deploy ssh://entrant@84.201.163.97/home/entrant/git/yandex-academy-task.git/
   - git push deploy
