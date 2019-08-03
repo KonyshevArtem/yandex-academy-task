@@ -12,8 +12,10 @@ services:
       - DATABASE_URI=mongo
       - DATABASE_NAME=db
       - REPLICA_SET=rs0
+    restart: always
   mongo:
     image: mongo
     volumes:
       - "~/docker/mongo:/data/db"
     command: --replSet rs0
+    restart: always
