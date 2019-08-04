@@ -14,6 +14,7 @@ services:
       - REPLICA_SET=rs0
     restart: always
   mongo:
+    hostname: mongo
     image: mongo
     volumes:
       - "~/docker/mongo:/data/db"
