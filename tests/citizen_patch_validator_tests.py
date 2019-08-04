@@ -3,7 +3,7 @@ import unittest
 from jsonschema import ValidationError
 from parameterized import parameterized
 
-from data_validator import DataValidator
+from application.data_validator import DataValidator
 from tests import test_utils
 
 

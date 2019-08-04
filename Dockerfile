@@ -3,4 +3,4 @@ EXPOSE 8080
 ADD . /app
 WORKDIR /app
 RUN pip install -r requirements.txt
-CMD ["python", "index.py"]
+CMD ["gunicorn", "-w", "9", "-b", "0.0.0.0:8080", "index:app"]

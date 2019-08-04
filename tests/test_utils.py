@@ -6,8 +6,8 @@ from bson import json_util
 from flask import Flask
 from mongomock import MongoClient
 
-from data_validator import DataValidator
-from index import make_app
+from application.data_validator import DataValidator
+from application.service import make_app
 
 
 class MockMongoClient(MongoClient):
