@@ -8,6 +8,7 @@ Jinja2==2.10.1
 jsonschema==3.0.1
 MarkupSafe==1.1.1
 mockupdb==1.7.0
+mongolock==1.3.4
 mongomock==3.17.0
 numpy==1.16.4
 parameterized==0.7.0

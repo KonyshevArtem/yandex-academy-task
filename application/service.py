@@ -1,9 +1,9 @@
 import logging
-from collections import defaultdict
+import os
 from datetime import datetime
-from multiprocessing import Lock
 
 from flask import Flask, request
+from mongolock import MongoLock
 from pymongo import ReturnDocument, UpdateMany
 from pymongo.database import Database
 from pymongo.errors import PyMongoError
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def make_app(db: Database, data_validator: DataValidator) -> Flask:
     app = Flask(__name__)
 
-    locks = defaultdict(Lock)
+    lock = MongoLock(client=db.client, db=db.name)
 
     @app.route('/imports', methods=['POST'])
     @handle_exceptions(logger)
@@ -42,7 +42,7 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
         for citizen in import_data['citizens']:
             citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
 
-        with locks['post_imports']:
+        with lock('post_imports', str(os.getpid()), timeout=60, expire=10):
             import_id = db['imports'].count()
             import_data['import_id'] = import_id
 
@@ -84,7 +84,7 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
 
         with db.client.start_session() as session:
             with session.start_transaction():
-                with locks[str(import_id)]:
+                with lock(str(import_id), str(os.getpid()), expire=60, timeout=10):
                     if 'relatives' in patch_data:
                         old_relatives_response: dict = db['imports'].find_one({'import_id': import_id},
                                                                               {'citizens': {
@@ -138,7 +138,7 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
         :return: Список жителей в указанной поставке
         :rtype: flask.Response
         """
-        with locks[str(import_id)]:
+        with lock(str(import_id), str(os.getpid()), expire=60, timeout=10):
             import_data = db['imports'].find_one({'import_id': import_id}, {'_id': 0, 'import_id': 0})
             if import_data is None:
                 raise PyMongoError('Import with specified id not found')
