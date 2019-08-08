@@ -7,11 +7,12 @@ from mongolock import MongoLock
 from pymongo import ReturnDocument, UpdateMany
 from pymongo.database import Database
 from pymongo.errors import PyMongoError
-from pymongo.results import InsertOneResult, BulkWriteResult
+from pymongo.results import BulkWriteResult
 from werkzeug.exceptions import BadRequest
 
 from application.data_validator import DataValidator
 from application.exception_handler import handle_exceptions
+from application.handlers.post_import_handler import post_import
 
 logger = logging.getLogger(__name__)
 
@@ -39,19 +40,7 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
 
         import_data = request.get_json()
         data_validator.validate_import(import_data)
-        for citizen in import_data['citizens']:
-            citizen['birth_date'] = datetime.strptime(citizen['birth_date'], '%d.%m.%Y')
-
-        with lock('post_imports', str(os.getpid()), timeout=60, expire=10):
-            import_id = db['imports'].count()
-            import_data['import_id'] = import_id
-
-            db_response: InsertOneResult = db['imports'].insert_one(import_data)
-            if db_response.acknowledged:
-                response = {'data': {'import_id': import_id}}
-                return response, 201
-            else:
-                raise PyMongoError('Operation was not acknowledged')
+        return post_import(import_data, lock, db)
 
     @app.route('/imports/<int:import_id>/citizens/<int:citizen_id>', methods=['PATCH'])
     @handle_exceptions(logger)

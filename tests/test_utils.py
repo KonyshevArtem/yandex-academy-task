@@ -57,6 +57,11 @@ def read_data(filename: str) -> dict:
     return import_data
 
 
+def get_fake_db():
+    """Создает экземпляр фейковой базы данных."""
+    return MockMongoClient()['db']
+
+
 def set_up_service() -> Tuple[Flask, MongoClient, DataValidator]:
     """
     Производит подготовку сервиса к тестированию.
@@ -64,7 +69,7 @@ def set_up_service() -> Tuple[Flask, MongoClient, DataValidator]:
     :return: Запущенный сервис, фейковый монго клиент, фейковый валидатор
     :rtype: Tuple[Flask, MongoClient, DataValidator]
     """
-    db = MockMongoClient()['db']
+    db = get_fake_db()
     validator = create_mock_validator()
     app = make_app(db, validator).test_client()
     return app, db, validator
