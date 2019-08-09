@@ -1,17 +1,15 @@
 import logging
 import os
-from datetime import datetime
 
 from flask import Flask, request
 from mongolock import MongoLock
-from pymongo import ReturnDocument, UpdateMany
 from pymongo.database import Database
 from pymongo.errors import PyMongoError
-from pymongo.results import BulkWriteResult
 from werkzeug.exceptions import BadRequest
 
 from application.data_validator import DataValidator
 from application.exception_handler import handle_exceptions
+from application.handlers.patch_citizen.patch_citizen_handler import patch_citizen
 from application.handlers.post_import_handler import post_import
 
 logger = logging.getLogger(__name__)
@@ -58,62 +56,12 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
         :rtype: flask.Response
         """
 
-        def make_update_relative_request(operation: str, relative_ids: list):
-            return UpdateMany({'import_id': import_id},
-                              {operation: {'citizens.$[element].relatives': citizen_id}},
-                              array_filters=[{'element.citizen_id': {'$in': relative_ids}}])
-
         if not request.is_json:
             raise BadRequest('Content-Type must be application/json')
 
         patch_data = request.get_json()
         data_validator.validate_citizen_patch(citizen_id, patch_data)
-        if 'birth_date' in patch_data:
-            patch_data['birth_date'] = datetime.strptime(patch_data['birth_date'], '%d.%m.%Y')
-
-        with db.client.start_session() as session:
-            with session.start_transaction():
-                with lock(str(import_id), str(os.getpid()), expire=60, timeout=10):
-                    if 'relatives' in patch_data:
-                        old_relatives_response: dict = db['imports'].find_one({'import_id': import_id},
-                                                                              {'citizens': {
-                                                                                  '$elemMatch': {
-                                                                                      'citizen_id': citizen_id}}},
-                                                                              session=session)
-                        if old_relatives_response is None:
-                            raise PyMongoError('Import or citizen with specified id not found')
-                        old_relatives = set(old_relatives_response['citizens'][0]['relatives'])
-                        new_relatives = set(patch_data['relatives'])
-                        to_push = new_relatives - old_relatives
-                        to_pull = old_relatives - new_relatives
-                        db_requests = []
-                        if to_push:
-                            db_requests.append(make_update_relative_request('$push', list(to_push)))
-                        if to_pull:
-                            db_requests.append(make_update_relative_request('$pull', list(to_pull)))
-                        if db_requests:
-                            bulk_response: BulkWriteResult = db['imports'].bulk_write(db_requests, session=session)
-                            if bulk_response.modified_count != len(db_requests):
-                                raise PyMongoError('Relative with specified id not found')
-
-                    update_data = {
-                        '$set': {f'citizens.$.{key}': val for key, val in patch_data.items()}
-                    }
-                    projection = {
-                        '_id': 0,
-                        'import_id': 0,
-                        'citizens': {
-                            '$elemMatch': {'citizen_id': citizen_id}
-                        }
-                    }
-                    db_response: dict = db['imports'].find_one_and_update(
-                        filter={'import_id': import_id, 'citizens.citizen_id': citizen_id}, update=update_data,
-                        projection=projection, return_document=ReturnDocument.AFTER, session=session)
-                    if db_response is None:
-                        raise PyMongoError('Import or citizen with specified id not found')
-                    birth_date = db_response['citizens'][0]['birth_date']
-                    db_response['citizens'][0]['birth_date'] = birth_date.strftime('%d.%m.%Y')
-                    return {'data': db_response['citizens'][0]}, 201
+        return patch_citizen(import_id, citizen_id, patch_data, lock, db)
 
     @app.route('/imports/<int:import_id>/citizens', methods=['GET'])
     @handle_exceptions(logger)

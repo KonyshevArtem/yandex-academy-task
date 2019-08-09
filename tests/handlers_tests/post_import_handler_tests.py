@@ -13,7 +13,8 @@ class PostImportHandlerTests(unittest.TestCase):
     def test_parse_birth_date_should_not_throw_error_when_no_citizens(self):
         import_data = {'citizens': []}
         post_import_handler._parse_birth_date(import_data)
-        self.assertTrue(True)
+        self.assertEqual(0, len(import_data['citizens']))
+        self.assertEqual(1, len(import_data))
 
     def test_parse_birth_date_should_parse_string_to_datetime_when_one_citizen(self):
         import_data = {'citizens': [{'birth_date': '01.02.2019'}]}
