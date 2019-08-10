@@ -1,7 +1,8 @@
+import json
 import logging
 import os
 
-from flask import Flask, request
+from flask import Flask, request, Response, jsonify
 from mongolock import MongoLock
 from pymongo.database import Database
 from pymongo.errors import PyMongoError
@@ -38,7 +39,8 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
 
         import_data = request.get_json()
         data_validator.validate_import(import_data)
-        return post_import(import_data, lock, db)
+        data, status = post_import(import_data, lock, db)
+        return Response(json.dumps(data, ensure_ascii=False), status, mimetype='application/json; charset=utf-8')
 
     @app.route('/imports/<int:import_id>/citizens/<int:citizen_id>', methods=['PATCH'])
     @handle_exceptions(logger)
@@ -55,13 +57,13 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
         :return: Актуальная информация об указанном жителе
         :rtype: flask.Response
         """
-
         if not request.is_json:
             raise BadRequest('Content-Type must be application/json')
 
         patch_data = request.get_json()
         data_validator.validate_citizen_patch(citizen_id, patch_data)
-        return patch_citizen(import_id, citizen_id, patch_data, lock, db)
+        data, status = patch_citizen(import_id, citizen_id, patch_data, lock, db)
+        return Response(json.dumps(data, ensure_ascii=False), status, mimetype='application/json; charset=utf-8')
 
     @app.route('/imports/<int:import_id>/citizens', methods=['GET'])
     @handle_exceptions(logger)
@@ -81,6 +83,7 @@ def make_app(db: Database, data_validator: DataValidator) -> Flask:
                 raise PyMongoError('Import with specified id not found')
             for citizen in import_data['citizens']:
                 citizen['birth_date'] = citizen['birth_date'].strftime('%d.%m.%Y')
-            return {'data': import_data['citizens']}, 201
+            return Response(json.dumps({'data': import_data['citizens']}, ensure_ascii=False), 201,
+                            mimetype='application/json; charset=utf-8')
 
     return app
