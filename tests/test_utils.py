@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from bson import json_util
 from flask import Flask
+from mongolock import MongoLock
 from mongomock import MongoClient
 
 from application.data_validator import DataValidator
@@ -71,5 +72,6 @@ def set_up_service() -> Tuple[Flask, MongoClient, DataValidator]:
     """
     db = get_fake_db()
     validator = create_mock_validator()
-    app = make_app(db, validator).test_client()
+    lock = MongoLock(client=db.client, db=db.name)
+    app = make_app(db, validator, lock).test_client()
     return app, db, validator

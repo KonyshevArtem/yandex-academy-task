@@ -1,7 +1,7 @@
 import logging
 
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo import MongoClient, IndexModel
+from pymongo.errors import PyMongoError, OperationFailure
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,21 @@ class CustomMongoClient(MongoClient):
 
         :param str db_name: имя базы данных, в которой необходимо создать индексы
         """
-        self[db_name]['imports'].create_index([('import_id', 1)], unique=True)
-        self[db_name]['imports'].create_index([('citizens.citizen_id', 1)])
-        self[db_name]['imports'].create_index([('import_id', 1), ('citizens.citizen_id', 1)], unique=True)
+        self._create_index(db_name, 'imports', IndexModel([('import_id', 1)], unique=True))
+        self._create_index(db_name, 'imports', IndexModel([('citizens.citizen_id', 1)]))
+        self._create_index(db_name, 'imports', IndexModel([('import_id', 1), ('citizens.citizen_id', 1)], unique=True))
+
+    def _create_index(self, db_name: str, collection_name: str, index: IndexModel):
+        """
+        Создает индекс в указанной коллекции указанной базы данных.
+
+        При наличии индекса с таким же именем, но другими параметрами, удаляет имеющийся индекс и создает новый.
+        :param str db_name: имя базы данных
+        :param str collection_name: имя коллекции
+        :param IndexModel index: создаваемый индекс
+        """
+        try:
+            self[db_name][collection_name].create_indexes([index])
+        except OperationFailure:
+            self[db_name][collection_name].drop_index(index.document['name'])
+            self[db_name][collection_name].create_indexes([index])

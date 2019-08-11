@@ -10,6 +10,7 @@ services:
       - mongo
     environment:
       - DATABASE_URI=mongo
+      - DATABASE_PORT=27017
       - DATABASE_NAME=db
       - REPLICA_SET=rs0
     restart: always

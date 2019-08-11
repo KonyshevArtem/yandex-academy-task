@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from flask import Flask, request, Response, jsonify
+from flask import Flask, request, Response
 from mongolock import MongoLock
 from pymongo.database import Database
 from pymongo.errors import PyMongoError
@@ -16,10 +16,8 @@ from application.handlers.post_import_handler import post_import
 logger = logging.getLogger(__name__)
 
 
-def make_app(db: Database, data_validator: DataValidator) -> Flask:
+def make_app(db: Database, data_validator: DataValidator, lock: MongoLock) -> Flask:
     app = Flask(__name__)
-
-    lock = MongoLock(client=db.client, db=db.name)
 
     @app.route('/imports', methods=['POST'])
     @handle_exceptions(logger)
