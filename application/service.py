@@ -10,6 +10,7 @@ from werkzeug.exceptions import BadRequest
 
 from application.data_validator import DataValidator
 from application.exception_handler import handle_exceptions
+from application.handlers.get_birthdays_handler import get_birthdays
 from application.handlers.patch_citizen.patch_citizen_handler import patch_citizen
 from application.handlers.post_import_handler import post_import
 
@@ -83,5 +84,20 @@ def make_app(db: Database, data_validator: DataValidator, lock: MongoLock) -> Fl
                 citizen['birth_date'] = citizen['birth_date'].strftime('%d.%m.%Y')
             return Response(json.dumps({'data': import_data['citizens']}, ensure_ascii=False), 201,
                             mimetype='application/json; charset=utf-8')
+
+    @app.route('/imports/<int:import_id>/citizens/birthdays', methods=['GET'])
+    @handle_exceptions(logger)
+    def birthdays(import_id: int):
+        """
+        Возвращает жителей и количество подарков, которые они будут покупать своим ближайшим родственникам
+        (1-го порядка), сгруппированных по месяцам из указанного набора данных.
+
+        :param int import_id: уникальный идентификатор поставки
+        :return: Жители и количество подарков по месяцам
+        :rtype: flask.Response
+        """
+        birthdays_data, status = get_birthdays(import_id, db, lock)
+        return Response(json.dumps(birthdays_data, ensure_ascii=False), status,
+                        mimetype='application/json; charset=utf-8')
 
     return app

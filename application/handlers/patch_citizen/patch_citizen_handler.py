@@ -64,6 +64,23 @@ def _get_citizen_data(db_response: dict) -> dict:
     return citizen_data
 
 
+def _delete_birthdays_data(import_id: int, patch_data: dict, lock: MongoLock, db: Database, session: ClientSession):
+    """
+    Удаляет сохраненные данные о подарках для указанной поставки при наличии поля relatives или birth_date
+    в новых данных о жителе
+
+    :param int import_id уникальный идентификатор поставки:
+    :param dict patch_data: новые данные о жителе
+    :param MongoLock lock: объект для ограничения одновременного доступа к ресурсам из разных процессов
+    :param Database db: объект базы данных, в которую записываются наборы данных о жителях
+    :param ClientSession session: сессия соединения с базой данных, через которую производятся все запросы
+    """
+    if 'relatives' not in patch_data and 'birth_date' not in patch_data:
+        return
+    with lock(f'birthdays_{import_id}', str(os.getpid()), timeout=60, expire=10):
+        db['birthdays'].delete_one({'import_id': import_id}, session=session)
+
+
 def patch_citizen(import_id: int, citizen_id: int, patch_data: dict, lock: MongoLock, db: Database) -> Tuple[dict, int]:
     """
     Изменяет информацию о жителе в указанном наборе данных.
@@ -86,4 +103,5 @@ def patch_citizen(import_id: int, citizen_id: int, patch_data: dict, lock: Mongo
         update_relatives(citizen_id, import_id, patch_data, db, session)
 
         db_response = _write_citizen_update(citizen_id, import_id, patch_data, db, session)
+        _delete_birthdays_data(import_id, patch_data, lock, db, session)
         return {'data': _get_citizen_data(db_response)}, 201

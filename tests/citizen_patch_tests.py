@@ -93,6 +93,35 @@ class CitizenPatchTests(unittest.TestCase):
         self.assertEqual(http_response.status_code, 201)
         self.assertEqual(patch_data['birth_date'], response_data['data']['birth_date'])
 
+    def test_should_not_delete_birthdays_when_no_relatives_and_no_birth_date(self):
+        headers = [('Content-Type', 'application/json')]
+        patch_data = {'name': 'aaa'}
+        self.db['birthdays'].insert_one({'import_id': 0})
+
+        http_response = self.app.patch('/imports/0/citizens/1', data=json_util.dumps(patch_data), headers=headers)
+
+        self.assertEqual(http_response.status_code, 201)
+        self.assertEqual(1, self.db['birthdays'].count_documents({'import_id': 0}))
+
+    def test_should_delete_birthdays_when_birth_date_in_patch(self):
+        headers = [('Content-Type', 'application/json')]
+        patch_data = {'birth_date': '01.01.2019'}
+        self.db['birthdays'].insert_one({'import_id': 0})
+
+        http_response = self.app.patch('/imports/0/citizens/1', data=json_util.dumps(patch_data), headers=headers)
+
+        self.assertEqual(http_response.status_code, 201)
+        self.assertEqual(0, self.db['birthdays'].count_documents({'import_id': 0}))
+
+    def test_should_not_raise_when_no_birthday_data(self):
+        headers = [('Content-Type', 'application/json')]
+        patch_data = {'birth_date': '01.01.2019'}
+
+        http_response = self.app.patch('/imports/0/citizens/1', data=json_util.dumps(patch_data), headers=headers)
+
+        self.assertEqual(http_response.status_code, 201)
+        self.assertEqual(0, self.db['birthdays'].count_documents({'import_id': 0}))
+
 
 if __name__ == '__main__':
     unittest.main()

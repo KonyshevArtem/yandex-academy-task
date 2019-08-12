@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime
 
+from mongolock import MongoLock
 from parameterized import parameterized
 from pymongo.errors import PyMongoError
 
@@ -72,3 +73,33 @@ class PatchCitizenHandlerTests(unittest.TestCase):
         db_request = {'citizens': [citizen]}
         citizen_data = patch_citizen_handler._get_citizen_data(db_request)
         self.assertEqual('31.12.2019', citizen_data['birth_date'])
+
+    def test_delete_birthdays_should_do_nothing_when_no_relatives_and_no_birth_date_in_patch(self):
+        db = test_utils.get_fake_db()
+        db['birthdays'].insert_one({'import_id': 0})
+        patch_citizen_handler._delete_birthdays_data(0, {}, None, db, None)
+        count = db['birthdays'].count_documents({'import_id': 0})
+        self.assertEqual(1, count)
+
+    def test_delete_birthdays_should_delete_when_relatives_in_patch(self):
+        db = test_utils.get_fake_db()
+        lock = MongoLock(client=db.client, db='db')
+        db['birthdays'].insert_one({'import_id': 0})
+        patch_citizen_handler._delete_birthdays_data(0, {'relatives': []}, lock, db, None)
+        count = db['birthdays'].count_documents({'import_id': 0})
+        self.assertEqual(0, count)
+
+    def test_delete_birthdays_should_delete_when_birth_date_in_patch(self):
+        db = test_utils.get_fake_db()
+        lock = MongoLock(client=db.client, db='db')
+        db['birthdays'].insert_one({'import_id': 0})
+        patch_citizen_handler._delete_birthdays_data(0, {'birth_date': datetime(2019, 1, 1)}, lock, db, None)
+        count = db['birthdays'].count_documents({'import_id': 0})
+        self.assertEqual(0, count)
+
+    def test_delete_birthdays_should_do_nothing_when_no_birthdays(self):
+        db = test_utils.get_fake_db()
+        lock = MongoLock(client=db.client, db='db')
+        patch_citizen_handler._delete_birthdays_data(0, {'birth_date': datetime(2019, 1, 1)}, lock, db, None)
+        count = db['birthdays'].count_documents({'import_id': 0})
+        self.assertEqual(0, count)
