@@ -4,7 +4,8 @@ from typing import List, Tuple
 
 from mongolock import MongoLock
 from pymongo.database import Database
-from pymongo.errors import PyMongoError
+
+from application.handlers import shared
 
 
 def _get_cached_birthdays(import_id: int, db: Database) -> dict:
@@ -20,23 +21,6 @@ def _get_cached_birthdays(import_id: int, db: Database) -> dict:
     """
     birthdays_data = db['birthdays'].find_one({'import_id': import_id}, {'_id': 0, 'import_id': 0})
     return birthdays_data
-
-
-def _get_citizens(import_id: int, db: Database) -> List[dict]:
-    """
-    Возвращает список жителей в указанной поставке.
-
-    :param int import_id: уникальный идентификатор поставки
-    :param Database db: объект базы данных, в которую записываются наборы данных о жителях
-    :raises :class:`PyMongoError`: Поставка с указанным уникальным идентификатором остутствует в базе данных
-
-    :return: Список жителей
-    :rtype: List[dict]
-    """
-    import_data = db['imports'].find_one({'import_id': import_id}, {'citizens': 1})
-    if import_data is None:
-        raise PyMongoError('Import with specified id not found')
-    return import_data['citizens']
 
 
 def _get_birthdays_data(citizens: List[dict]) -> dict:
@@ -99,7 +83,7 @@ def get_birthdays(import_id: int, db: Database, lock: MongoLock) -> Tuple[dict, 
         cached_birthdays_data = _get_cached_birthdays(import_id, db)
         if cached_birthdays_data is not None:
             return cached_birthdays_data, 201
-        citizens = _get_citizens(import_id, db)
+        citizens = shared.get_citizens(import_id, db, {'citizens.birth_date': 1, 'citizens.relatives': 1})
         birthdays_data = _get_birthdays_data(citizens)
         birthdays_data = _get_birthdays_representation(birthdays_data)
         _cache_birthdays_data(import_id, birthdays_data, db)

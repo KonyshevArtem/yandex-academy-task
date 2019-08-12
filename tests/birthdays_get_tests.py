@@ -24,8 +24,7 @@ class BirthdaysGetTests(unittest.TestCase):
         self.assertEqual(expected_result, birthday_data['data'])
 
     def test_should_return_cached_birthday_data_when_present(self):
-        expected_result = {str(i): [] for i in range(1, 13)}
-        expected_result['2'] = [{'citizen_id': 3, 'presents': 1}, {'citizen_id': 1, 'presents': 1}]
+        expected_result = {}
         self.db['birthdays'].insert_one({'import_id': 0, 'data': expected_result})
         http_response = self.app.get('/imports/0/citizens/birthdays')
         birthday_data = http_response.get_json()
@@ -44,3 +43,10 @@ class BirthdaysGetTests(unittest.TestCase):
             http_response = self.app.get('/imports/0/citizens/birthdays')
             self.assertEqual(201, http_response.status_code)
             cache_birthdays_mock.assert_not_called()
+
+    def test_should_return_bad_request_when_id_incorrect(self):
+        self.db['imports'].delete_one({'import_id': 0})
+        http_response = self.app.get('/imports/0/citizens/birthdays')
+        response_data = http_response.get_data(as_text=True)
+        self.assertEqual(400, http_response.status_code)
+        self.assertIn('Import with specified id not found', response_data)

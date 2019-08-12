@@ -5,12 +5,13 @@ import os
 from flask import Flask, request, Response
 from mongolock import MongoLock
 from pymongo.database import Database
-from pymongo.errors import PyMongoError
 from werkzeug.exceptions import BadRequest
 
 from application.data_validator import DataValidator
 from application.exception_handler import handle_exceptions
+from application.handlers import shared
 from application.handlers.get_birthdays_handler import get_birthdays
+from application.handlers.get_percentile_age_handler import get_percentile_age
 from application.handlers.patch_citizen.patch_citizen_handler import patch_citizen
 from application.handlers.post_import_handler import post_import
 
@@ -71,18 +72,15 @@ def make_app(db: Database, data_validator: DataValidator, lock: MongoLock) -> Fl
         Возвращает список всех жителей для указанного набора данных.
 
         :param int import_id: Уникальный идентификатор поставки
-        :raises: :class:`PyMongoError`: Объект с указанным уникальным идентификатором не был найден в базе данных
 
         :return: Список жителей в указанной поставке
         :rtype: flask.Response
         """
         with lock(str(import_id), str(os.getpid()), expire=60, timeout=10):
-            import_data = db['imports'].find_one({'import_id': import_id}, {'_id': 0, 'import_id': 0})
-            if import_data is None:
-                raise PyMongoError('Import with specified id not found')
-            for citizen in import_data['citizens']:
+            citizens_list = shared.get_citizens(import_id, db, {'_id': 0, 'import_id': 0})
+            for citizen in citizens_list:
                 citizen['birth_date'] = citizen['birth_date'].strftime('%d.%m.%Y')
-            return Response(json.dumps({'data': import_data['citizens']}, ensure_ascii=False), 201,
+            return Response(json.dumps({'data': citizens_list}, ensure_ascii=False), 201,
                             mimetype='application/json; charset=utf-8')
 
     @app.route('/imports/<int:import_id>/citizens/birthdays', methods=['GET'])
@@ -98,6 +96,22 @@ def make_app(db: Database, data_validator: DataValidator, lock: MongoLock) -> Fl
         """
         birthdays_data, status = get_birthdays(import_id, db, lock)
         return Response(json.dumps(birthdays_data, ensure_ascii=False), status,
+                        mimetype='application/json; charset=utf-8')
+
+    @app.route('/imports/<int:import_id>/towns/stat/percentile/age', methods=['GET'])
+    @handle_exceptions(logger)
+    def percentile_age(import_id: int):
+        """
+        Возвращает статистику по городам для указанного набора данных в разрезе возраста (полных лет) жителей:
+        p50, p75, p99, где число - это значение перцентиля.
+
+        :param int import_id: уникальный идентификатор поставки
+
+        :return: статистика по городам в разрезе возраста
+        :rtype: flask.Response
+        """
+        percentile_data, status = get_percentile_age(import_id, db, lock)
+        return Response(json.dumps(percentile_data, ensure_ascii=False), status,
                         mimetype='application/json; charset=utf-8')
 
     return app

@@ -38,6 +38,7 @@ class CustomMongoClient(MongoClient):
         self._create_index(db_name, 'imports', IndexModel([('citizens.citizen_id', 1)]))
         self._create_index(db_name, 'imports', IndexModel([('import_id', 1), ('citizens.citizen_id', 1)], unique=True))
         self._create_index(db_name, 'birthdays', IndexModel([('import_id', 1)], unique=True))
+        self._create_index(db_name, 'percentile_age', IndexModel([('import_id', 1)], unique=True))
 
     def _create_index(self, db_name: str, collection_name: str, index: IndexModel):
         """

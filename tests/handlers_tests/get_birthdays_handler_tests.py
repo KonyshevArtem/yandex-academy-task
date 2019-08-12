@@ -1,8 +1,6 @@
 import unittest
 from datetime import datetime
 
-from pymongo.errors import PyMongoError
-
 import application.handlers.get_birthdays_handler as get_birthdays_handler
 from tests import test_utils
 
@@ -18,17 +16,6 @@ class GetBirthdaysHandler(unittest.TestCase):
         db = test_utils.get_fake_db()
         birthdays_data = get_birthdays_handler._get_cached_birthdays(0, db)
         self.assertEqual(None, birthdays_data)
-
-    def test_get_citizens_should_return_data_if_found(self):
-        db = test_utils.get_fake_db()
-        db['imports'].insert_one({'import_id': 0, 'citizens': [{'citizen_id': 0}]})
-        citizens = get_birthdays_handler._get_citizens(0, db)
-        self.assertEqual([{'citizen_id': 0}], citizens)
-
-    def test_get_citizens_should_raise_if_not_found(self):
-        db = test_utils.get_fake_db()
-        with self.assertRaises(PyMongoError):
-            get_birthdays_handler._get_citizens(0, db)
 
     def test_get_birthdays_should_return_empty_dict_when_citizens_empty(self):
         birthdays_data = get_birthdays_handler._get_birthdays_data([])
