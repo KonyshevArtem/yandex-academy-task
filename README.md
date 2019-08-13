@@ -1,9 +1,20 @@
 # Задание для [школы бэкэнд-разработки Yandex](http://yandex.ru/promo/academy/backend-school/)
 [![Build Status](https://travis-ci.com/KonyshevArtem/yandex-academy-task.svg?token=z3sjoAcC4HGWpiWtgTxy&branch=master)](https://travis-ci.com/KonyshevArtem/yandex-academy-task)
 
-[TOC]
+ * [Описание задания](#decription)
+ * [Реализованные обработчики REST API](#handlers)
+   * [1: POST /imports](#post-import)
+   * [2: PATCH /imports/$import_id/citizens/$citizen_id](#patch-citizen)
+   * [3: GET /imports/$import_id/citizens](#get-citizens)
+   * [4: GET /imports/$import_id/citizens/birthdays](#get-birthdays)
+   * [5: GET /imports/$import_id/towns/stat/percentile/age](#get-percentile)
+ * [Инструкции](#guides)
+   * [Запуск приложения](#launch-app)
+     * [Docker Compose](#docker-compose)
+     * [Вручную](#manual)
+   * [Запуск тестов](#launch-tests)
 
-## Описание задания
+## <a name="decription"></a> Описание задания
 Интернет-магазин подарков хочет запустить акцию в разных регионах. Чтобы стратегия продаж была эффективной, необходимо произвести анализ рынка.
 
 У магазина есть поставщик, регулярно присылающий выгрузки данных с информацией о жителях. Проанализировав их, можно выявить спрос на подарки в разных городах у жителей разных возрастных групп по месяцам.
@@ -14,8 +25,8 @@
 
 Сервис необходимо развернуть на предоставленной виртуальной машине на 0.0.0.0:8080.
 
-## Реализованные обработчики REST API
-### 1: POST /imports
+## <a name="handlers"></a> Реализованные обработчики REST API
+### <a name="post-import"></a> 1: POST /imports
 Принимает на вход набор с данными о жителях в формате `json` и сохраняет его с уникальным идентификатором `import_id` .
 
 В наборе данных для каждого жителя должны присутствовать все поля, значения не могут быть `null` , порядок полей не важен:
@@ -85,7 +96,7 @@ relatives<sup>2</sup> | список из целых чисел | Ближайш
 		}
 	}
 
-###  2: PATCH /imports/$import_id/citizens/$citizen_id
+### <a name="patch-citizen"></a> 2: PATCH /imports/$import_id/citizens/$citizen_id
 Изменяет информацию о жителе в указанном наборе данных.
 
 На вход подается JSON в котором можно указать любые данные о жителе ( `name` , `gender` , `birth_date` , `relatives` , `town` , `street` , `building` , `apartment` ), кроме `citizen_id` .
@@ -129,7 +140,7 @@ relatives<sup>2</sup> | список из целых чисел | Ближайш
 		}
 	}
 
-### 3: GET /imports/$import_id/citizens
+### <a name="get-citizens"></a> 3: GET /imports/$import_id/citizens
 
 Возвращает список всех жителей для указанного набора данных.
 
@@ -173,7 +184,7 @@ relatives<sup>2</sup> | список из целых чисел | Ближайш
 		]
 	}
 
-### 4: GET /imports/$import_id/citizens/birthdays
+### <a name="get-birthdays"></a> 4: GET /imports/$import_id/citizens/birthdays
 
 Возвращает жителей и количество подарков, которые они будут покупать своим ближайшим родственникам (1-го порядка), сгруппированных по месяцам из указанного набора данных.
 
@@ -214,7 +225,7 @@ relatives<sup>2</sup> | список из целых чисел | Ближайш
 		}
 	}
 
-### 5: GET /imports/$import_id/towns/stat/percentile/age
+### <a name="get-percentile"></a> 5: GET /imports/$import_id/towns/stat/percentile/age
 
 Возвращает статистику по городам для указанного набора данных в разрезе возраста (полных лет) жителей: p50, p75, p99, где число - это значение перцентиля.
 
@@ -242,18 +253,18 @@ relatives<sup>2</sup> | список из целых чисел | Ближайш
  * `"p50": 20,` - 50% жителей меньше 20 лет
  * `"p75": 45,` - 75% жителей меньше 45 лет
 
-## Инструкции
+## <a name="guides"></a> Инструкции
 
-### Запуск приложения
+### <a name="launch-app"></a> Запуск приложения
 
-#### 1: Docker Compose
+#### <a name="docker-compose"></a> 1: Docker Compose
 
 Находясь в папке с файлом `docker-compose.yml` выполнить в терминале:
 
 	docker-compose build
 	docker-compose up
 
-#### 2: Вручную
+#### <a name="manual"></a> 2: Вручную
 
 __Перед запуском приложения необходимо убедится в наличии запущенного инстанса MongoDB в режиме Replica Set__
 
@@ -284,7 +295,7 @@ __Перед запуском приложения необходимо убед
  * `-w 4` - отвечает за количество дочерних процессов с приложением, которые запустит gunicorn.
  * `-b 0.0.0.0:8080` - отвечает за адрес и порт, на котором будет работать приложение
 
-### Запуск тестов
+### <a name="launch-tests"></a> Запуск тестов
 
 Следующие команды выполняются в терминале, находясь в корневой папке приложения
 
