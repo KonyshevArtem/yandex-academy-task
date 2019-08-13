@@ -7,7 +7,7 @@ from pymongo.errors import PyMongoError
 from werkzeug.exceptions import BadRequest
 
 
-def make_error_response(logger: logging.Logger, message: str, status_code: int) -> Tuple[dict, int]:
+def _make_error_response(logger: logging.Logger, message: str, status_code: int) -> Tuple[dict, int]:
     """
     Логирует ошибку и возвращает пару из объекта, содержащего сообщение, и кода ошибки
 
@@ -35,15 +35,15 @@ def handle_exceptions(logger: logging.Logger):
             try:
                 return f(*args, **kwargs)
             except ValidationError as e:
-                return make_error_response(logger, 'Input data is not valid: ' + str(e), 400)
+                return _make_error_response(logger, 'Input data is not valid: ' + str(e), 400)
             except BadRequest as e:
-                return make_error_response(logger, 'Error when parsing JSON: ' + str(e), 400)
+                return _make_error_response(logger, 'Error when parsing JSON: ' + str(e), 400)
             except PyMongoError as e:
-                return make_error_response(logger, 'Database error: ' + str(e), 400)
+                return _make_error_response(logger, 'Database error: ' + str(e), 400)
             except ValueError as e:
-                return make_error_response(logger, 'Value error: ' + str(e), 400)
+                return _make_error_response(logger, 'Value error: ' + str(e), 400)
             except Exception as e:
-                return make_error_response(logger, str(e), 400)
+                return _make_error_response(logger, str(e), 400)
 
         return wrap
 

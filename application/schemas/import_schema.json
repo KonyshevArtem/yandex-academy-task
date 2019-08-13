@@ -29,7 +29,11 @@
                         "type": "string"
                     },
                     "gender": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                            "male",
+                            "female"
+                        ]
                     },
                     "relatives": {
                         "type": "array",

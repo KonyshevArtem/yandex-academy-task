@@ -25,23 +25,23 @@ class ImportValidatorTests(unittest.TestCase):
     @parameterized.expand([
         ({}, 'citizens'),
         ({'citizens': [{'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '', 'birth_date': '',
-                        'gender': '', 'relatives': []}]}, 'citizen_id'),
+                        'gender': 'male', 'relatives': []}]}, 'citizen_id'),
         ({'citizens': [{'citizen_id': 0, 'street': '', 'building': '', 'apartment': 0, 'name': '', 'birth_date': '',
-                        'gender': '', 'relatives': []}]}, 'town'),
+                        'gender': 'male', 'relatives': []}]}, 'town'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'building': '', 'apartment': 0, 'name': '', 'birth_date': '',
-                        'gender': '', 'relatives': []}]}, 'street'),
+                        'gender': 'male', 'relatives': []}]}, 'street'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'apartment': 0, 'name': '', 'birth_date': '',
-                        'gender': '', 'relatives': []}]}, 'building'),
+                        'gender': 'male', 'relatives': []}]}, 'building'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'name': '', 'birth_date': '',
-                        'gender': '', 'relatives': []}]}, 'apartment'),
+                        'gender': 'male', 'relatives': []}]}, 'apartment'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'birth_date': '',
-                        'gender': '', 'relatives': []}]}, 'name'),
+                        'gender': 'male', 'relatives': []}]}, 'name'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'gender': '', 'relatives': []}]}, 'birth_date'),
+                        'gender': 'male', 'relatives': []}]}, 'birth_date'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
                         'birth_date': '', 'relatives': []}]}, 'gender'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': '', 'gender': ''}]}, 'relatives'),
+                        'birth_date': '', 'gender': 'male'}]}, 'relatives'),
     ])
     def test_import_should_be_incorrect_when_missing_field(self, import_data: dict, field_name: str):
         self.assert_exception(import_data, f'\'{field_name}\' is a required property')
@@ -49,26 +49,26 @@ class ImportValidatorTests(unittest.TestCase):
     @parameterized.expand([
         ({'citizens': None}, 'array'),
         ({'citizens': [{'citizen_id': None, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': []}]}, 'integer'),
+                        'birth_date': '', 'gender': 'male', 'relatives': []}]}, 'integer'),
         ({'citizens': [{'citizen_id': 0, 'town': None, 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': []}]}, 'string'),
+                        'birth_date': '', 'gender': 'male', 'relatives': []}]}, 'string'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': None, 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': []}]}, 'string'),
+                        'birth_date': '', 'gender': 'male', 'relatives': []}]}, 'string'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': None, 'apartment': '', 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': []}]}, 'string'),
+                        'birth_date': '', 'gender': 'male', 'relatives': []}]}, 'string'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': None, 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': []}]}, 'integer'),
+                        'birth_date': '', 'gender': 'male', 'relatives': []}]}, 'integer'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': None,
-                        'birth_date': '', 'gender': '', 'relatives': []}]}, 'string'),
+                        'birth_date': '', 'gender': 'male', 'relatives': []}]}, 'string'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': None, 'gender': '', 'relatives': []}]}, 'string'),
+                        'birth_date': None, 'gender': 'male', 'relatives': []}]}, 'string'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
                         'birth_date': '', 'gender': None, 'relatives': []}]}, 'string'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': None}]}, 'array'),
+                        'birth_date': '', 'gender': 'male', 'relatives': None}]}, 'array'),
         ({'citizens': ['']}, 'object'),
         ({'citizens': [{'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-                        'birth_date': '', 'gender': '', 'relatives': ['']}]}, 'integer'),
+                        'birth_date': '', 'gender': 'male', 'relatives': ['']}]}, 'integer'),
     ])
     def test_import_should_be_incorrect_when_wrong_type_of_field(self, import_data: dict, data_type: str):
         self.assert_exception(import_data, f'is not of type \'{data_type}\'')
@@ -76,16 +76,16 @@ class ImportValidatorTests(unittest.TestCase):
     def test_import_should_be_correct_with_different_field_order(self):
         import_data = {'citizens': [
             {'town': '', 'citizen_id': 0, 'street': '', 'building': '', 'apartment': 0, 'name': '',
-             'birth_date': '01.01.2019', 'gender': '', 'relatives': []}]}
+             'birth_date': '01.01.2019', 'gender': 'male', 'relatives': []}]}
         self.data_validator.validate_import(import_data)
 
     @parameterized.expand([
         [{'EXTRA': 0, 'citizens': [
             {'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-             'birth_date': '01.01.2019', 'gender': '', 'relatives': []}]}],
+             'birth_date': '01.01.2019', 'gender': 'male', 'relatives': []}]}],
         [{'citizens': [
             {'EXTRA': 0, 'citizen_id': 0, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-             'birth_date': '01.01.2019', 'gender': '', 'relatives': []}]}],
+             'birth_date': '01.01.2019', 'gender': 'male', 'relatives': []}]}],
     ])
     def test_import_should_be_incorrect_when_containing_extra_fields(self, import_data: dict):
         self.assert_exception(import_data, '')
@@ -98,9 +98,9 @@ class ImportValidatorTests(unittest.TestCase):
     def test_import_should_be_incorrect_when_relatives_not_duplex(self):
         import_data = {'citizens': [
             {'citizen_id': 1, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-             'birth_date': '01.01.2019', 'gender': '', 'relatives': [2]},
+             'birth_date': '01.01.2019', 'gender': 'male', 'relatives': [2]},
             {'citizen_id': 2, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
-             'birth_date': '01.01.2019', 'gender': '', 'relatives': []}
+             'birth_date': '01.01.2019', 'gender': 'male', 'relatives': []}
         ]}
         self.assert_exception(import_data, 'Citizen relatives are not duplex')
 
@@ -122,6 +122,12 @@ class ImportValidatorTests(unittest.TestCase):
     def test_import_should_be_incorrect_when_relatives_not_unique(self, _):
         import_data = {'citizens': [{'citizen_id': 0, 'relatives': [1, 1]}]}
         self.assert_exception(import_data, 'Relatives ids should be unique')
+
+    def test_import_should_be_incorrect_when_gender_not_male_or_female(self):
+        import_data = {
+            'citizens': [{'citizen_id': 1, 'town': '', 'street': '', 'building': '', 'apartment': 0, 'name': '',
+                          'birth_date': '', 'gender': 'helicopter', 'relatives': []}]}
+        self.assert_exception(import_data, 'is not one of [\'male\', \'female\']')
 
 
 if __name__ == '__main__':

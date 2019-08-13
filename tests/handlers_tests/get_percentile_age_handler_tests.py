@@ -2,7 +2,6 @@ import unittest
 from datetime import datetime
 
 from application.handlers import get_percentile_age_handler
-from tests import test_utils
 
 
 class GetPercentileAgeHandlerTests(unittest.TestCase):
@@ -76,22 +75,3 @@ class GetPercentileAgeHandlerTests(unittest.TestCase):
         representation = get_percentile_age_handler._get_percentiles_representation(percentiles)
         self.assertEqual({'data': [{'town': 'A', 'p50': 50, 'p75': 52, 'p99': 54},
                                    {'town': 'B', 'p50': 19, 'p75': 19, 'p99': 19}]}, representation)
-
-    def test_get_cached_birthdays_should_return_data_if_found(self):
-        db = test_utils.get_fake_db()
-        db['percentile_age'].insert_one({'import_id': 0, 'data': {'1': []}})
-        percentile_age_data = get_percentile_age_handler._get_cached_percentile_age(0, db)
-        self.assertEqual({'data': {'1': []}}, percentile_age_data)
-
-    def test_get_cached_birthdays_should_return_none_if_not_found(self):
-        db = test_utils.get_fake_db()
-        percentile_age_data = get_percentile_age_handler._get_cached_percentile_age(0, db)
-        self.assertEqual(None, percentile_age_data)
-
-    def test_cache_percentile_age_should_write_to_db(self):
-        db = test_utils.get_fake_db()
-        percentile_age_data = {'data': [{'town': 'A', 'p50': 50, 'p75': 52, 'p99': 54},
-                                        {'town': 'B', 'p50': 19, 'p75': 19, 'p99': 19}]}
-        get_percentile_age_handler._cache_percentile_age_data(0, percentile_age_data, db)
-        cached_percentile_age_data = db['percentile_age'].find_one({'import_id': 0}, {'_id': 0, 'import_id': 0})
-        self.assertEqual(percentile_age_data, cached_percentile_age_data)

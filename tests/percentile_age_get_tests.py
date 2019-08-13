@@ -33,15 +33,13 @@ class PercentileAgeGetTests(unittest.TestCase):
         self.assertEqual(expected_result, birthday_data['data'])
 
     def test_should_cache_percentile_age_data(self):
-        module = 'application.handlers.get_percentile_age_handler._cache_percentile_age_data'
-        with mock.patch(module) as cache_percentile_age_mock:
+        with mock.patch('application.decorators.response_cacher._cache_data') as cache_percentile_age_mock:
             http_response = self.app.get('/imports/0/towns/stat/percentile/age')
             self.assertEqual(201, http_response.status_code)
             cache_percentile_age_mock.assert_called()
 
     def test_should_not_cache_when_birthday_data_in_cache(self):
-        module = 'application.handlers.get_percentile_age_handler._cache_percentile_age_data'
-        with mock.patch(module) as cache_percentile_age_mock:
+        with mock.patch('application.decorators.response_cacher._cache_data') as cache_percentile_age_mock:
             self.db['percentile_age'].insert_one({'import_id': 0})
             http_response = self.app.get('/imports/0/towns/stat/percentile/age')
             self.assertEqual(201, http_response.status_code)

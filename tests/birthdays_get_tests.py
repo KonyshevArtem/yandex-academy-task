@@ -32,13 +32,13 @@ class BirthdaysGetTests(unittest.TestCase):
         self.assertEqual(expected_result, birthday_data['data'])
 
     def test_should_cache_birthday_data(self):
-        with mock.patch('application.handlers.get_birthdays_handler._cache_birthdays_data') as cache_birthdays_mock:
+        with mock.patch('application.decorators.response_cacher._cache_data') as cache_birthdays_mock:
             http_response = self.app.get('/imports/0/citizens/birthdays')
             self.assertEqual(201, http_response.status_code)
             cache_birthdays_mock.assert_called()
 
     def test_should_not_cache_when_birthday_data_in_cache(self):
-        with mock.patch('application.handlers.get_birthdays_handler._cache_birthdays_data') as cache_birthdays_mock:
+        with mock.patch('application.decorators.response_cacher._cache_data') as cache_birthdays_mock:
             self.db['birthdays'].insert_one({'import_id': 0})
             http_response = self.app.get('/imports/0/citizens/birthdays')
             self.assertEqual(201, http_response.status_code)

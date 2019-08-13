@@ -10,21 +10,6 @@ from pymongo.database import Database
 from application.handlers import shared
 
 
-def _get_cached_percentile_age(import_id: int, db: Database) -> dict:
-    """
-    Возвращает закешированные ранее данные о возрастах из указанной поставки.
-
-    Если закешированные данные отсутствуют, возвращается None.
-    :param int import_id: уникальный идентификатор поставки
-    :param Database db: объект базы данных, в которую записываются наборы данных о жителях
-
-    :return: Данные о возрастах
-    :rtype: dict
-    """
-    percentile_age_data = db['percentile_age'].find_one({'import_id': import_id}, {'_id': 0, 'import_id': 0})
-    return percentile_age_data
-
-
 def _calculate_age(citizens: List[dict]):
     """
     Вычисляет возраст всех жителей в переданном списке.
@@ -75,18 +60,6 @@ def _get_percentiles_representation(percentiles_data: dict) -> dict:
     return representation
 
 
-def _cache_percentile_age_data(import_id: int, percentile_age_data: dict, db: Database):
-    """
-    Сохраняет данные о возрастах в указанной поставке в базу данных.
-
-    :param dict percentile_age_data: данные о возрастах
-    :param int import_id: уникальный идентификатор поставки
-    :param Database db: объект базы данных, в которую записываются наборы данных о жителях
-    """
-    data = {'import_id': import_id, 'data': percentile_age_data['data']}
-    db['percentile_age'].insert_one(data)
-
-
 def get_percentile_age(import_id: int, db: Database, lock: MongoLock) -> Tuple[dict, int]:
     """
     Возвращает статистику по городам для указанного набора данных в разрезе возраста (полных лет) жителей:
@@ -99,15 +72,10 @@ def get_percentile_age(import_id: int, db: Database, lock: MongoLock) -> Tuple[d
     :return: статистика по городам в разрезе возраста и http статус
     :rtype: Tuple[dict, int]
     """
-    with lock(str(import_id), str(os.getpid()), expire=60, timeout=10), \
-         lock(f'percentile_age_{import_id}', str(os.getpid()), expire=60, timeout=10):
-        cached_percentile_age = _get_cached_percentile_age(import_id, db)
-        if cached_percentile_age is not None:
-            return cached_percentile_age, 201
+    with lock(str(import_id), str(os.getpid()), expire=60, timeout=10):
         citizens = shared.get_citizens(import_id, db, {'citizens.birth_date': 1, 'citizens.town': 1})
         _calculate_age(citizens)
         grouped = _group_by_town(citizens)
         _calculate_percentile(grouped)
         percentiles_data = _get_percentiles_representation(grouped)
-        _cache_percentile_age_data(import_id, percentiles_data, db)
         return percentiles_data, 201

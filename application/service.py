@@ -8,7 +8,8 @@ from pymongo.database import Database
 from werkzeug.exceptions import BadRequest
 
 from application.data_validator import DataValidator
-from application.exception_handler import handle_exceptions
+from application.decorators.exception_handler import handle_exceptions
+from application.decorators.response_cacher import cache_response
 from application.handlers import shared
 from application.handlers.get_birthdays_handler import get_birthdays
 from application.handlers.get_percentile_age_handler import get_percentile_age
@@ -85,6 +86,7 @@ def make_app(db: Database, data_validator: DataValidator, lock: MongoLock) -> Fl
 
     @app.route('/imports/<int:import_id>/citizens/birthdays', methods=['GET'])
     @handle_exceptions(logger)
+    @cache_response('birthdays', db, lock)
     def birthdays(import_id: int):
         """
         Возвращает жителей и количество подарков, которые они будут покупать своим ближайшим родственникам
@@ -100,6 +102,7 @@ def make_app(db: Database, data_validator: DataValidator, lock: MongoLock) -> Fl
 
     @app.route('/imports/<int:import_id>/towns/stat/percentile/age', methods=['GET'])
     @handle_exceptions(logger)
+    @cache_response('percentile_age', db, lock)
     def percentile_age(import_id: int):
         """
         Возвращает статистику по городам для указанного набора данных в разрезе возраста (полных лет) жителей:
