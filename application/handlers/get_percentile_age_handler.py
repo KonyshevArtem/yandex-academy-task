@@ -18,7 +18,7 @@ def _calculate_age(citizens: List[dict]):
     """
     days_in_year = 365.2425
     for citizen in citizens:
-        citizen['age'] = int((datetime.now() - citizen['birth_date']).days / days_in_year)
+        citizen['age'] = int((datetime.utcnow() - citizen['birth_date']).days / days_in_year)
 
 
 def _group_by_town(citizens: List[dict]) -> dict:
@@ -43,7 +43,7 @@ def _calculate_percentile(grouped: dict):
     :param dict grouped: возраста жителей, сгруппированные по городам
     """
     for town in grouped:
-        grouped[town] = [int(p) for p in np.percentile(grouped[town], [50, 75, 99], interpolation='linear')]
+        grouped[town] = [round(p, 2) for p in np.percentile(grouped[town], [50, 75, 99], interpolation='linear')]
 
 
 def _get_percentiles_representation(percentiles_data: dict) -> dict:

@@ -2,23 +2,25 @@
     "title": "Citizen patch",
     "type": "object",
     "properties": {
-        "citizen_id": {
-            "type": "integer"
-        },
         "town": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
         },
         "street": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
         },
         "building": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
         },
         "apartment": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 0
         },
         "name": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
         },
         "birth_date": {
             "type": "string"

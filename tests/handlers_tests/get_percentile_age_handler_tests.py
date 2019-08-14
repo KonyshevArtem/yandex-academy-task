@@ -44,7 +44,7 @@ class GetPercentileAgeHandlerTests(unittest.TestCase):
         grouped = {'A': [19]}
         get_percentile_age_handler._calculate_percentile(grouped)
         for p in grouped['A']:
-            self.assertIsInstance(p, int)
+            self.assertIsInstance(p, float)
 
     def test_calculate_percentile_when_one_citizen(self):
         grouped = {'A': [19]}
@@ -54,12 +54,12 @@ class GetPercentileAgeHandlerTests(unittest.TestCase):
     def test_calculate_percentile_when_multiple_citizens(self):
         grouped = {'A': [19, 25, 40, 50, 51, 53, 55]}
         get_percentile_age_handler._calculate_percentile(grouped)
-        self.assertEqual({'A': [50, 52, 54]}, grouped)
+        self.assertEqual({'A': [50.0, 52.0, 54.88]}, grouped)
 
     def test_calculate_percentile_when_multiple_towns(self):
         grouped = {'A': [19, 25, 40, 50, 51, 53, 55], 'B': [19]}
         get_percentile_age_handler._calculate_percentile(grouped)
-        self.assertEqual({'A': [50, 52, 54], 'B': [19, 19, 19]}, grouped)
+        self.assertEqual({'A': [50.0, 52.0, 54.88], 'B': [19.0, 19.0, 19.0]}, grouped)
 
     def test_get_representation_should_be_empty_when_percentile_empty(self):
         representation = get_percentile_age_handler._get_percentiles_representation({})

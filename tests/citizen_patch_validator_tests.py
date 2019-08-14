@@ -53,6 +53,27 @@ class CitizenPatchValidatorTests(unittest.TestCase):
         patch_data = {'relatives': [1, 1]}
         self.assert_exception(0, patch_data, 'Relatives ids should be unique')
 
+    def test_patch_should_be_incorrect_when_containing_unknown_fields(self):
+        patch_data = {'citizen_id': 1}
+        self.assert_exception(0, patch_data, '')
+
+    def test_patch_should_be_incorrect_when_apartment_less_then_zero(self):
+        patch_data = {'apartment': -1}
+        self.assert_exception(0, patch_data, 'Failed validating \'minimum\'')
+
+    def test_patch_should_be_incorrect_when_gender_not_male_or_female(self):
+        patch_data = {'gender': 'helicopter'}
+        self.assert_exception(0, patch_data, 'is not one of [\'male\', \'female\']')
+
+    @parameterized.expand([
+        [{'name': ''}],
+        [{'town': ''}],
+        [{'building': ''}],
+        [{'street': ''}]
+    ])
+    def test_patch_should_be_incorrect_empty_string(self, patch_data: dict):
+        self.assert_exception(0, patch_data, 'is too short')
+
 
 if __name__ == '__main__':
     unittest.main()
