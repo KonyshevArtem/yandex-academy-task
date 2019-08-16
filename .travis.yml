@@ -2,7 +2,7 @@ language: python
 python:
   - '3.6'
 addons:
-  ssh_known_hosts: 84.201.163.64
+  ssh_known_hosts: 84.201.162.16
 script:
   - python -m unittest discover -s tests/ -p '*_tests.py'
 before_install:
@@ -12,5 +12,5 @@ after_success:
   - eval "$(ssh-agent -s)"
   - chmod 600 /tmp/deploy_key
   - ssh-add /tmp/deploy_key
-  - git remote add deploy ssh://entrant@84.201.163.64/home/entrant/git/yandex-academy-task.git/
+  - git remote add deploy ssh://entrant@84.201.162.16/home/entrant/git/yandex-academy-task.git/
   - git push deploy master
